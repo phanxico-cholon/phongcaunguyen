@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-analytics.js";
-import { getDatabase, ref, set, update, remove, onValue, onDisconnect, push } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js";
+import { getDatabase, ref, set, update as fbUpdate, remove, onValue, onDisconnect, push } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyCfgAZ0Pzd2W_6DkDTDNlErDAL5Uhy0NoI",
@@ -190,7 +190,7 @@ window.triggerAction = function(actionText, zoneKey = null) {
         myAvatar.targetY = ZONES[zoneKey].y;
     }
     
-    update(ref(db, 'rooms/phongcaunguyen/users/' + myId), { 
+    fbUpdate(ref(db, 'rooms/phongcaunguyen/users/' + myId), { 
         action: actionText,
         targetX: myAvatar.targetX,
         targetY: myAvatar.targetY
@@ -199,7 +199,7 @@ window.triggerAction = function(actionText, zoneKey = null) {
     setTimeout(() => {
         if (myAvatar.joined) {
             myAvatar.action = null;
-            update(ref(db, 'rooms/phongcaunguyen/users/' + myId), { action: null });
+            fbUpdate(ref(db, 'rooms/phongcaunguyen/users/' + myId), { action: null });
         }
     }, 8000);
 }
@@ -265,7 +265,8 @@ canvas.addEventListener('click', (e) => {
     myAvatar.targetY = e.clientY - rect.top;
 });
 
-function update() {
+// Đổi tên hàm từ update() thành updateGame() để tránh trùng lặp với từ khóa import từ Firebase
+function updateGame() {
     if (!myAvatar.joined) return;
     const dx = myAvatar.targetX - myAvatar.x;
     const dy = myAvatar.targetY - myAvatar.y;
@@ -275,7 +276,7 @@ function update() {
         myAvatar.x += (dx / dist) * myAvatar.speed;
         myAvatar.y += (dy / dist) * myAvatar.speed;
 
-        update(ref(db, 'rooms/phongcaunguyen/users/' + myId), {
+        fbUpdate(ref(db, 'rooms/phongcaunguyen/users/' + myId), {
             x: Math.round(myAvatar.x),
             y: Math.round(myAvatar.y)
         });
@@ -291,7 +292,7 @@ window.openRosaryModal = function() {
         alert("Vui lòng bước vào phòng cầu nguyện trước!");
         return;
     }
-    triggerAction('📿 Đang lần chuỗi Môi Côi', 'duc-me');
+    triggerAction('📿 Đang lần chuỗi Mân Côi', 'duc-me');
     currentRosaryStep = 0;
     renderRosaryBeads();
     document.getElementById('rosaryModal').style.display = 'flex';
@@ -299,7 +300,7 @@ window.openRosaryModal = function() {
 
 window.closeRosaryModal = function() {
     document.getElementById('rosaryModal').style.display = 'none';
-    window.triggerAction('📿 Đã hoàn thành giờ kinh Môi Côi');
+    window.triggerAction('📿 Đã hoàn thành giờ kinh Mân Côi');
 }
 
 function renderRosaryBeads() {
@@ -445,7 +446,7 @@ function render() {
 }
 
 function loop() {
-    update();
+    updateGame(); // Gọi hàm updateGame thay vì update để tránh xung đột
     render();
     requestAnimationFrame(loop);
 }
