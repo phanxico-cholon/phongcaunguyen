@@ -84,13 +84,13 @@ async function fetchScripture() {
 
         for (let r of rows) {
             if (r.length >= 4 && r[0] === todayStr) {
-                found = { cau: r[1].replace(/^"|"$/g, ''), trich: r[2].replace(/^"|"$/g, ''), thucHanh: r[3].replace(/^"|"$/g, '') };
+                found = { cau: r[1].replace(/^"|"$/g, ''), trich: r[2].replace(/^"|"$/g, ''), thucHanh: r[3].replace(/^"\vert{}"$/g, '') };
                 break;
             }
         }
         if (!found && rows.length > 0 && rows[0].length >= 4) {
             const r = rows[0];
-            found = { cau: r[1].replace(/^"|"$/g, ''), trich: r[2].replace(/^"|"$/g, ''), thucHanh: r[3].replace(/^"|"$/g, '') };
+            found = { cau: r[1].replace(/^"|"$/g, ''), trich: r[2].replace(/^"|"$/g, ''), thucHanh: r[3].replace(/^"\vert{}"$/g, '') };
         }
         if (found) {
             document.getElementById('scriptureText').innerText = `"${found.cau}" (${found.trich})`;
@@ -127,7 +127,7 @@ async function fetchPrayersFromSheet() {
             updateTicker();
         }
     } catch (e) {
-        console.error("Lỗi tải Ý nguyện từ Google Sheet:", e);
+        console.error("Lỗi tải Ý nguyện từ sổ Cầu nguyện:", e);
     }
 }
 
@@ -258,14 +258,15 @@ function updateTicker() {
     }
 }
 
-// 6. DI CHUYỂN TRONG CANVAS (Bấm chuột để di chuyển)
+// 6. XỬ LÝ CLICK CHUỘT DI CHUYỂN
 canvas.addEventListener('click', (e) => {
     if (!myAvatar.joined) return;
+    
     const rect = canvas.getBoundingClientRect();
     myAvatar.targetX = e.clientX - rect.left;
     myAvatar.targetY = e.clientY - rect.top;
 
-    // Gửi ngay tọa độ đích mới lên Firebase để đồng bộ thời gian thực
+    // Cập nhật tọa độ đích lên Firebase ngay lập tức
     fbUpdate(ref(db, 'rooms/phongcaunguyen/users/' + myId), {
         targetX: Math.round(myAvatar.targetX),
         targetY: Math.round(myAvatar.targetY)
@@ -274,6 +275,7 @@ canvas.addEventListener('click', (e) => {
 
 function updateGame() {
     if (!myAvatar.joined) return;
+    
     const dx = myAvatar.targetX - myAvatar.x;
     const dy = myAvatar.targetY - myAvatar.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
@@ -282,7 +284,7 @@ function updateGame() {
         myAvatar.x += (dx / dist) * myAvatar.speed;
         myAvatar.y += (dy / dist) * myAvatar.speed;
 
-        // Cập nhật tọa độ hiện tại liên tục lên Firebase
+        // Gửi tọa độ hiện tại liên tục để người khác thấy mình đang di chuyển
         fbUpdate(ref(db, 'rooms/phongcaunguyen/users/' + myId), {
             x: Math.round(myAvatar.x),
             y: Math.round(myAvatar.y)
@@ -330,7 +332,7 @@ function renderRosaryBeads() {
     document.getElementById('rosaryCounter').innerText = `Đã đọc: ${currentRosaryStep} / ${totalRosaryBeads} kinh`;
 }
 
-// 8. QUẢN LÝ ÂM THANH NỀN
+// 8. ÂM THANH NỀN
 let isAudioPlaying = false;
 window.toggleAudio = function() {
     const audio = document.getElementById('bgAudio');
@@ -394,79 +396,6 @@ function drawChurch() {
     ctx.fillStyle = '#4c566a';
     ctx.fillRect(100, 60, 65, 55);
     ctx.fillStyle = '#81a1c1';
-    ctx.fillText('Bệ Đức Mẹ', 132, 90);
+    ctx.fillText('Đức Mẹ', 132, 90);
 
-    ctx.fillStyle = '#3b4252';
-    ctx.fillRect(740, 60, 75, 55);
-    ctx.fillStyle = '#d8dee9';
-    ctx.font = '9px sans-serif';
-    ctx.fillText('St. Carlo', 777, 85);
-
-    ctx.fillStyle = '#3b4252';
-    ctx.fillRect(825, 60, 75, 55);
-    ctx.fillText('St. Giuse', 862, 85);
-
-    ctx.fillStyle = '#3b4252';
-    ctx.fillRect(910, 60, 45, 55);
-    ctx.fillText('Tử Đạo', 932, 85);
-
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
-    ctx.lineWidth = 2;
-    for (let y = 200; y < 450; y += 45) {
-        ctx.strokeRect(80, y, 260, 25);
-        ctx.strokeRect(620, y, 260, 25);
-    }
-}
-
-function drawAvatar(p, isMe = false) {
-    ctx.save();
-    ctx.translate(p.x, p.y);
-
-    if (isMe) {
-        ctx.beginPath();
-        ctx.arc(0, 0, 18, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(136, 192, 208, 0.3)';
-        ctx.fill();
-    }
-
-    ctx.font = '18px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(getRoleIcon(p.role), 0, 6);
-
-    ctx.fillStyle = isMe ? '#88c0d0' : '#eceff4';
-    ctx.font = '11px sans-serif';
-    ctx.fillText(p.name, 0, -16);
-
-    if (p.action) {
-        ctx.fillStyle = '#ebcb8b';
-        ctx.font = '10px sans-serif';
-        ctx.fillText(p.action, 0, -30);
-    }
-
-    ctx.restore();
-}
-
-function render() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawChurch();
-
-    for (let id in onlineUsers) {
-        let user = onlineUsers[id];
-        if (id === myId) {
-            drawAvatar(myAvatar, true);
-        } else {
-            drawAvatar(user, false);
-        }
-    }
-}
-
-function loop() {
-    updateGame();
-    render();
-    requestAnimationFrame(loop);
-}
-
-// Khởi chạy hệ thống
-fetchScripture();
-fetchPrayersFromSheet();
-loop();
+    ctx.fillStyle = '#3
