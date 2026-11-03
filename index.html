@@ -3,99 +3,104 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Phòng Cầu Nguyện Trực Tuyến - Gx. Thánh Phanxicô Xaviê (Cha Tam)</title>
-    <!-- Nhập thư viện Three.js từ CDN -->
+    <title>Chanmi - Nhà Thờ Công Giáo Trực Tuyến 3D</title>
+    <!-- Thư viện Three.js 3D -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- MODAL ĐĂNG NHẬP VÀO PHÒNG -->
+    <!-- MODAL ĐĂNG NHẬP BAN ĐẦU -->
     <div id="joinModal" class="modal-overlay">
         <div class="modal-card">
-            <h2>🇻🇳 Gx. Thánh Phanxicô Xaviê (Cha Tam)</h2>
-            <p>Phòng Cầu Nguyện Trực Tuyến 3D</p>
+            <h2>🇻🇳 Chanmi - Nhà Thờ Trực Tuyến</h2>
+            <p>Không gian cầu nguyện và hiệp thông Công giáo 3D</p>
             <div class="input-group">
-                <label>Nhập Tên Thánh + Họ Tên:</label>
-                <input type="text" id="inputName" placeholder="Ví dụ: Gioan Baotixita Nguyễn Văn A" autocomplete="off">
+                <label>Tên Thánh + Họ Tên của bạn:</label>
+                <input type="text" id="inputName" placeholder="Ví dụ: Maria Nguyễn Thị B" autocomplete="off">
             </div>
             <div class="input-group">
-                <label>Chọn Bậc Sống / Vai Trò:</label>
+                <label>Bậc Sống / Vai Trò:</label>
                 <select id="selectRole">
                     <option value="Giáo dân">🕯️ Giáo dân</option>
                     <option value="Linh mục">✝️ Linh mục</option>
-                    <option value="Tu sĩ nam">🚹 Tu sĩ nam</option>
-                    <option value="Tu sĩ nữ">🚺 Tu sĩ nữ</option>
+                    <option value="Tu sĩ">🚺 Tu sĩ</option>
                 </select>
             </div>
-            <button class="btn-primary" onclick="joinRoom()">Bước Vào Nhà Thờ 3D</button>
+            <button class="btn-primary" onclick="joinRoom()">Vào Không Gian Cầu Nguyện</button>
         </div>
     </div>
 
-    <!-- KHUNG GIAO DIỆN CHÍNH -->
+    <!-- GIAO DIỆN CHÍNH -->
     <div id="appContainer">
-        <!-- HEADER / BẢNG LỜI CHÚA & TICKER Ý NGUYỆN -->
+        <!-- TOP BAR: THÔNG TIN PHÒNG & LỜI CHÚA -->
         <header class="church-header">
+            <div class="room-badge">⛪ Chanmi 01 <span id="onlineCount">(01 người)</span></div>
             <div class="scripture-box">
-                <span id="scriptureText">📖 Đang tải Lời Chúa hôm nay...</span>
-                <span id="scripturePractice" class="practice-text"></span>
+                <span id="scriptureText">📖 "Thầy ở cùng anh em mọi ngày cho đến tận thế." (Mt 28,20)</span>
             </div>
-            <div class="ticker-container">
-                <div class="ticker-title">🙏 Sổ Tay Ý Nguyện:</div>
-                <div class="ticker-wrap">
-                    <div id="tickerTrack" class="ticker-track">Cầu cho gia đình luôn bình an và hiệp nhất trong tình yêu Chúa.</div>
-                </div>
+            <div class="header-controls">
+                <button id="audioToggleBtn" onclick="toggleAudio()" class="icon-btn">🎵</button>
+                <button onclick="leaveRoom()" class="icon-btn">🚪</button>
             </div>
         </header>
 
-        <!-- KHÔNG GIAN 3D CANVAS -->
+        <!-- VÙNG HIỂN THỊ 3D CANVAS & GIAO DIỆN TƯƠNG TÁC GIỮA MÀN HÌNH -->
         <div id="canvasContainer">
-            <div id="watermark">Gx. Cha Tam 3D</div>
+            <!-- BẢNG TƯƠNG TÁC LẦN CHUỖI MÂN CÔI 3D (Giống Sansa) -->
+            <div id="rosaryOverlay" class="rosary-3d-panel" style="display: none;">
+                <div class="rosary-title">📿 Chuỗi Hạt Mân Côi Trực Tuyến</div>
+                <div class="rosary-chain-view" id="rosaryChainContainer">
+                    <!-- Các hạt chuỗi được sinh động hóa bằng JS -->
+                </div>
+                <div class="rosary-counter-info">
+                    <span id="rosaryCurrentCount">0</span> / 10 Kinh Kính Mừng
+                </div>
+                <div class="rosary-actions">
+                    <button class="btn-sub" onclick="previousBead()">⬅ Kinh trước</button>
+                    <button class="btn-main" onclick="nextBead()">Đọc & Qua Hạt ➡</button>
+                </div>
+            </div>
         </div>
 
-        <!-- BẢNG ĐIỀU KHIỂN & HÀNH ĐỘNG TÂM LINH -->
-        <footer class="church-footer">
-            <div class="action-buttons">
-                <button onclick="triggerAction('🙏 Đang hiệp ý cầu nguyện', 'thanh-the')">✝️ Chầu Thánh Thể</button>
-                <button onclick="openRosaryModal()">📿 Lần Chuỗi Mân Côi</button>
-                <button onclick="triggerAction('🕯️ Đang thắp nến cầu nguyện', 'duc-me')">🕯️ Thắp Nến Đức Mẹ</button>
-                <button onclick="openPrayerInputModal()">📖 Ghi Sổ Tay Ý Nguyện</button>
-                <button id="audioToggleBtn" onclick="toggleAudio()">🎵 Bật Nhạc</button>
-                <button class="btn-leave" onclick="leaveRoom()">🚪 Rời Phòng</button>
-            </div>
-        </footer>
+        <!-- BOTTOM NAV BAR: THANH ĐIỀU HƯỚNG TÂM LINH (Giống Sansa / Thali) -->
+        <nav class="bottom-nav">
+            <button class="nav-btn" onclick="triggerAction('🙏 Đang chầu Thánh Thể', 'thanh-the')">
+                <span class="icon">✝️</span>
+                <span class="label">Chầu Thánh Thể</span>
+            </button>
+            <button class="nav-btn" onclick="openRosaryPanel()">
+                <span class="icon">📿</span>
+                <span class="label">Lần Chuỗi</span>
+            </button>
+            <button class="nav-btn" onclick="triggerAction('🕯️ Đang thắp nến', 'duc-me')">
+                <span class="icon">🕯️</span>
+                <span class="label">Thắp Nến</span>
+            </button>
+            <button class="nav-btn" onclick="openPrayerModal()">
+                <span class="icon">📖</span>
+                <span class="label">Sổ Ý Nguyện</span>
+            </button>
+        </nav>
     </div>
 
-    <!-- MODAL GHI Ý NGUYỆN -->
+    <!-- MODAL GHI SỔ Ý NGUYỆN -->
     <div id="prayerModal" class="modal-overlay" style="display: none;">
         <div class="modal-card">
-            <h3>📖 Ghi Sổ Tay Ý Nguyện</h3>
-            <p>Ý nguyện của bạn sẽ được lưu vào Sổ tay và hiển thị trực tiếp tại nhà thờ.</p>
-            <textarea id="inputPrayerText" rows="4" placeholder="Nhập lời nguyện xin của bạn..."></textarea>
+            <h3>📖 Sổ Tay Ý Nguyện Chanmi</h3>
+            <p>Gửi gắm lời nguyện xin của bạn lên bàn thờ Chúa.</p>
+            <textarea id="inputPrayerText" rows="4" placeholder="Nhập ý nguyện của bạn..."></textarea>
             <div class="modal-actions">
-                <button class="btn-secondary" onclick="closePrayerInputModal()">Hủy</button>
+                <button class="btn-secondary" onclick="closePrayerModal()">Hủy</button>
                 <button class="btn-primary" onclick="submitPrayer()">Gửi Ý Nguyện</button>
             </div>
         </div>
     </div>
 
-    <!-- MODAL LẦN CHUỖI MÂN CÔI -->
-    <div id="rosaryModal" class="modal-overlay" style="display: none;">
-        <div class="modal-card rosary-card">
-            <h3>📿 Giờ Kinh Mân Côi Trực Tuyến</h3>
-            <p>Click vào các hạt chuỗi theo nhịp cầu nguyện của bạn:</p>
-            <div id="rosaryPath" class="rosary-path"></div>
-            <div id="rosaryCounter" class="rosary-counter">Đã đọc: 0 / 10 kinh</div>
-            <button class="btn-primary" onclick="closeRosaryModal()">Hoàn Thành & Đóng</button>
-        </div>
-    </div>
-
-    <!-- ÂM THANH NỀN -->
     <audio id="bgAudio" loop>
         <source src="https://www.bensound.com/bensound-music/bensound-meditation.mp3" type="audio/mpeg">
     </audio>
 
-    <!-- KỊCH BẢN CHÍNH (JS MODULE) -->
     <script type="module" src="script.js"></script>
 </body>
 </html>
