@@ -67,9 +67,9 @@ let userPrayers = [];
 const ZONES = {
     'thanh-the': { x: 620, y: 110 },
     'duc-me': { x: 130, y: 110 },
-    'carlo': { x: 780, y: 110 },
-    'giuse': { x: 840, y: 110 },
-    'tu-dao': { x: 900, y: 110 },
+    'carlo': { x: 755, y: 110 },
+    'giuse': { x: 845, y: 110 },
+    'tu-dao': { x: 925, y: 110 },
     'long-nha-tho': { x: 480, y: 420 }
 };
 
@@ -127,7 +127,7 @@ async function fetchPrayersFromSheet() {
             updateTicker();
         }
     } catch (e) {
-        console.error("Lỗi tải Ý nguyện từ Sổ Càu Nguyện:", e);
+        console.error("Lỗi tải Ý nguyện từ Sổ Cầu Nguyện:", e);
     }
 }
 
@@ -266,7 +266,6 @@ canvas.addEventListener('click', (e) => {
     myAvatar.targetX = e.clientX - rect.left;
     myAvatar.targetY = e.clientY - rect.top;
 
-    // Cập nhật tọa độ đích lên Firebase ngay lập tức
     fbUpdate(ref(db, 'rooms/phongcaunguyen/users/' + myId), {
         targetX: Math.round(myAvatar.targetX),
         targetY: Math.round(myAvatar.targetY)
@@ -284,7 +283,6 @@ function updateGame() {
         myAvatar.x += (dx / dist) * myAvatar.speed;
         myAvatar.y += (dy / dist) * myAvatar.speed;
 
-        // Gửi tọa độ hiện tại liên tục để người khác thấy mình đang di chuyển
         fbUpdate(ref(db, 'rooms/phongcaunguyen/users/' + myId), {
             x: Math.round(myAvatar.x),
             y: Math.round(myAvatar.y)
@@ -368,55 +366,75 @@ function getRoleIcon(role) {
 }
 
 function drawChurch() {
+    // Sàn nhà thờ
     ctx.fillStyle = '#2b303c';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+    // Thảm đỏ lối đi chính
     ctx.fillStyle = '#bf616a';
     ctx.fillRect(400, 100, 120, 380);
 
+    // === 1. BÀN THỜ CHÍNH ===
     ctx.fillStyle = '#3b4252';
     ctx.fillRect(320, 45, 280, 75);
     ctx.fillStyle = '#d8dee9';
-    ctx.fillRect(415, 65, 90, 25);
+    ctx.fillRect(415, 65, 90, 30);
     ctx.fillStyle = '#ebcb8b';
     ctx.font = '11px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('✝ <br>BÀN THỜ CHÍNH', 460, 82);
+    ctx.fillText('✝', 460, 78);
+    ctx.fillText('BÀN THỜ CHÍNH', 460, 91);
 
+    // === 2. BÊN PHẢI CUNG THÁNH: NHÀ TẠM & ĐÈN CHẦU (ĐỎ) ===
     ctx.fillStyle = '#4c566a';
-    ctx.fillRect(590, 60, 65, 55);
+    ctx.fillRect(590, 50, 65, 65);
     ctx.fillStyle = '#ebcb8b';
-    ctx.fillText('Nhà Tạm', 622, 85);
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Nhà Tạm', 622, 78);
 
+    // Đèn đỏ chầu Thánh Thể nhấp nháy
     ctx.beginPath();
-    ctx.arc(622, 98, 4 + Math.sin(Date.now() / 200) * 1.5, 0, Math.PI * 2);
+    ctx.arc(622, 95, 4 + Math.sin(Date.now() / 200) * 1.5, 0, Math.PI * 2);
     ctx.fillStyle = '#ff5555';
     ctx.fill();
 
+    // === 3. BÊN TRÁI CUNG THÁNH: BỆ THỜ ĐỨC MẸ MARIA ===
     ctx.fillStyle = '#4c566a';
-    ctx.fillRect(100, 60, 65, 55);
+    ctx.fillRect(100, 50, 65, 65);
     ctx.fillStyle = '#81a1c1';
-    ctx.font = '9px sans-serif';
-    ctx.fillText('Đức Mẹ', 132, 90);
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Đức Mẹ', 132, 85);
 
+    // === 4. BÊN PHẢI NGOÀI CUNG THÁNH: 3 BỆ THỜ (TÁCH DÒNG VÀ CÂN ĐỐI) ===
+    ctx.font = '9px sans-serif';
+    ctx.textAlign = 'center';
+
+    // Bệ 1: Thánh Carlo Acutis
     ctx.fillStyle = '#3b4252';
-    ctx.fillRect(740, 60, 75, 55);
-    ctx.fillStyle = '#81a1c1';
-    ctx.font = '9px sans-serif';
-    ctx.fillText('Thánh Carlo Acutis', 777, 85);
+    ctx.fillRect(715, 50, 80, 65);
+    ctx.fillStyle = '#d8dee9';
+    ctx.fillText('Thánh', 755, 70);
+    ctx.fillText('Carlo Acutis', 755, 86);
 
+    // Bệ 2: Thánh Giuse
     ctx.fillStyle = '#3b4252';
-    ctx.fillRect(825, 60, 75, 55);
-    ctx.fillStyle = '#81a1c1';
-    ctx.font = '9px sans-serif';
-    ctx.fillText('Thánh Giuse', 862, 85);
+    ctx.fillRect(805, 50, 80, 65);
+    ctx.fillStyle = '#d8dee9';
+    ctx.fillText('Thánh', 845, 70);
+    ctx.fillText('Giuse', 845, 86);
 
+    // Bệ 3: Các Thánh Tử Đạo Việt Nam & Trung Hoa
     ctx.fillStyle = '#3b4252';
-    ctx.fillRect(910, 60, 45, 55);
-    ctx.fillStyle = '#81a1c1';
-    ctx.font = '9px sans-serif';
-    ctx.fillText('Thánh Tử Đạo VN và Trung Hoa', 932, 85);
+    ctx.fillRect(895, 50, 60, 65);
+    ctx.fillStyle = '#d8dee9';
+    ctx.fillText('Thánh Tử Đạo', 925, 68);
+    ctx.fillText('Việt Nam', 925, 84);
+    ctx.fillText('Trung Hoa', 925, 100);
+    
 
+    // === 5. KHU VỰC LÒNG NHÀ THỜ (Các hàng ghế) ===
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
     ctx.lineWidth = 2;
     for (let y = 200; y < 450; y += 45) {
@@ -462,7 +480,6 @@ function render() {
         if (id === myId) {
             drawAvatar(myAvatar, true);
         } else {
-            // Đối với người khác, nếu họ đang di chuyển, chúng ta nội suy vị trí mượt mà
             let dx = (user.targetX !== undefined ? user.targetX : user.x) - user.x;
             let dy = (user.targetY !== undefined ? user.targetY : user.y) - user.y;
             if (Math.abs(dx) > 1) user.x += dx * 0.1;
