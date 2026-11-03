@@ -17,9 +17,6 @@ const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 const db = getDatabase(app, "https://phong-cau-nguyen-cha-tam-default-rtdb.firebaseio.com");
 
-const canvas = document.getElementById('churchCanvas');
-const ctx = canvas.getContext('2d');
-
 const SCRIPTURE_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSJ09XWzs4p3AEzE7g8DCH0Zff6_cTbmA_9TytwC0v7fjLw_BAuSHbGiQDnh8ixlUnABUn5AKCEO0sS/pub?gid=0&single=true&output=csv";
 const PRAYER_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRUtj5dV5XJiJLem1z7p2_LO2nWCUnrurkP2giYbtfvUN2TbRG5D1Cw8kWFrtKhsndEazGeaecKJRFD/pub?gid=0&single=true&output=csv";
 const GOOGLE_SHEET_WEBHOOK_URL = ""; 
@@ -52,11 +49,12 @@ let myId = 'user_' + Math.floor(Math.random() * 90000 + 10000);
 let myAvatar = {
     name: '',
     role: 'Giáo dân',
-    x: 480,
-    y: 420,
-    targetX: 480,
-    targetY: 420,
-    speed: 3,
+    x: 0,
+    y: 0,
+    z: 4,
+    targetX: 0,
+    targetZ: 4,
+    speed: 0.1,
     action: null,
     joined: false
 };
@@ -65,15 +63,118 @@ let onlineUsers = {};
 let userPrayers = [];
 
 const ZONES = {
-    'thanh-the': { x: 620, y: 110 },
-    'duc-me': { x: 130, y: 110 },
-    'carlo': { x: 755, y: 110 },
-    'giuse': { x: 845, y: 110 },
-    'tu-dao': { x: 925, y: 110 },
-    'long-nha-tho': { x: 480, y: 420 }
+    'thanh-the': { x: 0, z: -4 },
+    'duc-me': { x: -4, z: -4 },
+    'carlo': { x: 2, z: -4 },
+    'giuse': { x: 4, z: -4 },
+    'tu-dao': { x: 6, z: -4 },
+    'long-nha-tho': { x: 0, z: 4 }
 };
 
-// 1. TẢI LỜI CHÚA TỪ GOOGLE SHEET
+// === KHỞI TẠO THREE.JS 3D SCENE ===
+const container = document.getElementById('canvasContainer');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x1a1d24);
+scene.fog = new THREE.FogExp2(0x1a1d24, 0.035);
+
+const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+camera.position.set(0, 12, 14);
+camera.lookAt(0, 0, 0);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(container.clientWidth, container.clientHeight);
+renderer.shadowMap.enabled = true;
+container.appendChild(renderer.domElement);
+
+// Ánh sáng
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+scene.add(ambientLight);
+
+const dirLight = new THREE.DirectionalLight(0xfff5e6, 0.8);
+dirLight.position.set(10, 20, 10);
+dirLight.castShadow = true;
+scene.add(dirLight);
+
+// Dựng Không gian Nhà Thơ 3D
+function buildChurch3D() {
+    // Sàn nhà thờ
+    const floorGeo = new THREE.BoxGeometry(14, 0.5, 12);
+    const floorMat = new THREE.MeshStandardMaterial({ color: 0x2b303c, roughness: 0.8 });
+    const floor = new THREE.Mesh(floorGeo, floorMat);
+    floor.position.y = -0.25;
+    scene.add(floor);
+
+    // Thảm đỏ lối đi
+    const carpetGeo = new THREE.BoxGeometry(2.5, 0.52, 11.5);
+    const carpetMat = new THREE.MeshStandardMaterial({ color: 0xbf616a });
+    const carpet = new THREE.Mesh(carpetGeo, carpetMat);
+    carpet.position.set(0, -0.2, 0.25);
+    scene.add(carpet);
+
+    // Bàn Thờ Chính
+    const altarGeo = new THREE.BoxGeometry(3.5, 1.2, 1.2);
+    const altarMat = new THREE.MeshStandardMaterial({ color: 0x3b4252 });
+    const mainAltar = new THREE.Mesh(altarGeo, altarMat);
+    mainAltar.position.set(0, 0.6, -4.5);
+    scene.add(mainAltar);
+
+    // Bệ Đức Mẹ & Nhà Tạm
+    createShrine(-4, -4.5, 1.5, 1.2, 1.2, 0x4c566a);
+    createShrine(4, -4.5, 1.5, 1.2, 1.2, 0x4c566a);
+}
+
+function createShrine(x, z, w, h, d, color) {
+    const geo = new THREE.BoxGeometry(w, h, d);
+    const mat = new THREE.MeshStandardMaterial({ color: color });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.set(x, h/2, z);
+    scene.add(mesh);
+}
+
+buildChurch3D();
+
+// Tạo Avatar 3D cho người dùng (Dạng hình trụ kết hợp nhãn tên HTML)
+const avatarMeshes = {};
+
+function updateAvatarMesh(id, userData, isMe) {
+    let meshGroup = avatarMeshes[id];
+    if (!meshGroup) {
+        meshGroup = new THREE.Group();
+
+        // Thân nhân vật
+        const bodyGeo = new THREE.CylinderGeometry(0.3, 0.3, 1, 16);
+        const bodyMat = new THREE.MeshStandardMaterial({ color: isMe ? 0x88c0d0 : 0xeceff4 });
+        const body = new THREE.Mesh(bodyGeo, bodyMat);
+        body.position.y = 0.5;
+        meshGroup.add(body);
+
+        // Nhãn tên nổi trên đầu
+        const canvasLabel = document.createElement('canvas');
+        const ctxLabel = canvasLabel.getContext('2d');
+        canvasLabel.width = 256;
+        canvasLabel.height = 64;
+        ctxLabel.fillStyle = isMe ? '#88c0d0' : '#eceff4';
+        ctxLabel.font = 'bold 24px sans-serif';
+        ctxLabel.textAlign = 'center';
+        ctxLabel.fillText(userData.name, 128, 40);
+
+        const texture = new THREE.CanvasTexture(canvasLabel);
+        const spriteMat = new THREE.SpriteMaterial({ map: texture });
+        const sprite = new THREE.Sprite(spriteMat);
+        sprite.scale.set(1.5, 0.4, 1);
+        sprite.position.y = 1.3;
+        meshGroup.add(sprite);
+
+        scene.add(meshGroup);
+        avatarMeshes[id] = meshGroup;
+    }
+
+    // Di chuyển mượt mà tới tọa độ mới
+    meshGroup.position.x += (userData.x - meshGroup.position.x) * 0.1;
+    meshGroup.position.z += (userData.z - meshGroup.position.z) * 0.1;
+}
+
+// 1. TẢI LỜI CHÚA
 async function fetchScripture() {
     try {
         const res = await fetch(SCRIPTURE_CSV);
@@ -81,7 +182,6 @@ async function fetchScripture() {
         const rows = parseCSV(text).slice(1);
         const todayStr = new Date().toISOString().split('T')[0];
         let found = null;
-
         for (let r of rows) {
             if (r.length >= 4 && r[0] === todayStr) {
                 found = { cau: r[1].replace(/^"|"$/g, ''), trich: r[2].replace(/^"|"$/g, ''), thucHanh: r[3].replace(/^"|"$/g, '') };
@@ -94,52 +194,38 @@ async function fetchScripture() {
         }
         if (found) {
             document.getElementById('scriptureText').innerText = `"${found.cau}" (${found.trich})`;
-            document.getElementById('scripturePractice').innerText = `👉 Thực hành sống: ${found.thucHanh}`;
+            document.getElementById('scripturePractice').innerText = `👉 Thực hành: ${found.thucHanh}`;
         }
-    } catch (e) {
-        console.error("Lỗi tải Lời Chúa:", e);
-    }
+    } catch (e) { console.error(e); }
 }
 
-// 2. TẢI Ý NGUYỆN TỪ GOOGLE SHEET
+// 2. TẢI Ý NGUYỆN
 async function fetchPrayersFromSheet() {
     try {
         const res = await fetch(PRAYER_CSV);
         const text = await res.text();
         const rows = parseCSV(text).slice(1);
         let list = [];
-
         for (let i = rows.length - 1; i >= 0 && list.length < 5; i--) {
             let r = rows[i];
-            if (r.length >= 5) {
-                let name = r[2].replace(/^"|"$/g, '');
-                let content = r[4].replace(/^"|"$/g, '');
-                if (content) list.push(`${name}: ${content}`);
-            } else if (r.length >= 3) {
+            if (r.length >= 3) {
                 let name = r[1] ? r[1].replace(/^"|"$/g, '') : "Giáo dân";
                 let content = r[2] ? r[2].replace(/^"|"$/g, '') : r[0];
                 if (content) list.push(`${name}: ${content}`);
             }
         }
-
         if (list.length > 0) {
             userPrayers = list;
             updateTicker();
         }
-    } catch (e) {
-        console.error("Lỗi tải Ý nguyện từ Sổ Cầu Nguyện:", e);
-    }
+    } catch (e) { console.error(e); }
 }
 
-// 3. LẮNG NGHE REALTIME FIREBASE
 function listenRealtimeData() {
-    const usersRef = ref(db, 'rooms/phongcaunguyen/users');
-    onValue(usersRef, (snapshot) => {
+    onValue(ref(db, 'rooms/phongcaunguyen/users'), (snapshot) => {
         onlineUsers = snapshot.val() || {};
     });
-
-    const prayersRef = ref(db, 'rooms/phongcaunguyen/prayers');
-    onValue(prayersRef, (snapshot) => {
+    onValue(ref(db, 'rooms/phongcaunguyen/prayers'), (snapshot) => {
         const data = snapshot.val();
         if (data) {
             let list = Object.values(data).reverse().slice(0, 5);
@@ -149,35 +235,29 @@ function listenRealtimeData() {
     });
 }
 
-// 4. THAM GIA VÀ RỜI PHÒNG
+// 3. THAM GIA & RỜI PHÒNG
 window.joinRoom = function() {
     const inputName = document.getElementById('inputName').value.trim();
-    if (!inputName) {
-        alert("Vui lòng nhập Tên Thánh + Họ tên của bạn!");
-        return;
-    }
+    if (!inputName) { alert("Vui lòng nhập Tên Thánh + Họ tên!"); return; }
     myAvatar.name = inputName;
     myAvatar.role = document.getElementById('selectRole').value;
     myAvatar.joined = true;
 
-    myAvatar.x = Math.floor(Math.random() * (700 - 260)) + 260;
-    myAvatar.y = Math.floor(Math.random() * (460 - 320)) + 320;
+    myAvatar.x = (Math.random() - 0.5) * 6;
+    myAvatar.z = 3 + Math.random() * 2;
     myAvatar.targetX = myAvatar.x;
-    myAvatar.targetY = myAvatar.y;
+    myAvatar.targetZ = myAvatar.z;
 
     document.getElementById('joinModal').style.display = 'none';
 
     const userRef = ref(db, 'rooms/phongcaunguyen/users/' + myId);
     set(userRef, myAvatar);
     onDisconnect(userRef).remove();
-
     listenRealtimeData();
 }
 
 window.leaveRoom = function() {
-    if (myAvatar.joined) {
-        remove(ref(db, 'rooms/phongcaunguyen/users/' + myId));
-    }
+    if (myAvatar.joined) remove(ref(db, 'rooms/phongcaunguyen/users/' + myId));
     myAvatar.joined = false;
     document.getElementById('joinModal').style.display = 'flex';
 }
@@ -185,318 +265,99 @@ window.leaveRoom = function() {
 window.triggerAction = function(actionText, zoneKey = null) {
     if (!myAvatar.joined) return;
     myAvatar.action = actionText;
-
     if (zoneKey && ZONES[zoneKey]) {
         myAvatar.targetX = ZONES[zoneKey].x;
-        myAvatar.targetY = ZONES[zoneKey].y;
+        myAvatar.targetZ = ZONES[zoneKey].z;
     }
-    
     fbUpdate(ref(db, 'rooms/phongcaunguyen/users/' + myId), { 
-        action: actionText,
-        targetX: myAvatar.targetX,
-        targetY: myAvatar.targetY
+        action: actionText, targetX: myAvatar.targetX, targetZ: myAvatar.targetZ 
     });
-
     setTimeout(() => {
-        if (myAvatar.joined) {
-            myAvatar.action = null;
-            fbUpdate(ref(db, 'rooms/phongcaunguyen/users/' + myId), { action: null });
-        }
+        if (myAvatar.joined) fbUpdate(ref(db, 'rooms/phongcaunguyen/users/' + myId), { action: null });
     }, 8000);
 }
 
-// 5. SỔ TAY Ý NGUYỆN
-window.openPrayerInputModal = function() {
-    if (!myAvatar.joined) {
-        alert("Vui lòng bước vào phòng cầu nguyện trước!");
-        return;
-    }
-    document.getElementById('prayerModal').style.display = 'flex';
-}
-
-window.closePrayerInputModal = function() {
-    document.getElementById('prayerModal').style.display = 'none';
-}
+// 4. SỔ TAY Ý NGUYỆN & CHUỖI MÂN CÔI
+window.openPrayerInputModal = () => document.getElementById('prayerModal').style.display = 'flex';
+window.closePrayerInputModal = () => document.getElementById('prayerModal').style.display = 'none';
 
 window.submitPrayer = function() {
     const text = document.getElementById('inputPrayerText').value.trim();
-    if (!text) {
-        alert("Vui lòng nhập nội dung ý nguyện!");
-        return;
-    }
-
-    const prayerData = {
-        id: myId,
-        thoiGian: new Date().toLocaleString("vi-VN"),
-        name: myAvatar.name,
-        role: myAvatar.role,
-        text: text,
-        timestamp: Date.now()
-    };
-
-    const prayersRef = ref(db, 'rooms/phongcaunguyen/prayers');
-    push(prayersRef, prayerData);
-
-    if (GOOGLE_SHEET_WEBHOOK_URL) {
-        fetch(GOOGLE_SHEET_WEBHOOK_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(prayerData)
-        }).catch(err => console.log("Lỗi gửi ngầm sổ tay Cầu nguyện:", err));
-    }
-
-    alert("Ý nguyện của bạn đã được lưu vào Sổ tay và hiển thị trực tiếp tại nhà thờ!");
+    if (!text) { alert("Vui lòng nhập nội dung!"); return; }
+    push(ref(db, 'rooms/phongcaunguyen/prayers'), {
+        id: myId, name: myAvatar.name, role: myAvatar.role, text: text, timestamp: Date.now()
+    });
+    alert("Đã lưu ý nguyện thành công!");
     document.getElementById('inputPrayerText').value = '';
     closePrayerInputModal();
 }
 
 function updateTicker() {
     const track = document.getElementById('tickerTrack');
-    if (track) {
-        track.innerHTML = `<span>${userPrayers.length > 0 ? userPrayers.join("   •   ") : "Cầu cho gia đình luôn bình an và hiệp nhất trong tình yêu Chúa."}</span>`;
-    }
+    if (track) track.innerHTML = `<span>${userPrayers.join("   •   ")}</span>`;
 }
 
-// 6. XỬ LÝ CLICK CHUỘT DI CHUYỂN
-canvas.addEventListener('click', (e) => {
+// 5. RAYCASTER CLICK CHUỘT DI CHUYỂN TRONG 3D
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+
+window.addEventListener('click', (e) => {
     if (!myAvatar.joined) return;
-    
-    const rect = canvas.getBoundingClientRect();
-    myAvatar.targetX = e.clientX - rect.left;
-    myAvatar.targetY = e.clientY - rect.top;
+    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
 
-    fbUpdate(ref(db, 'rooms/phongcaunguyen/users/' + myId), {
-        targetX: Math.round(myAvatar.targetX),
-        targetY: Math.round(myAvatar.targetY)
-    });
-});
+    raycaster.setFromCamera(mouse, camera);
+    const targetPoint = new THREE.Vector3();
+    raycaster.ray.intersectPlane(plane, targetPoint);
 
-function updateGame() {
-    if (!myAvatar.joined) return;
-    
-    const dx = myAvatar.targetX - myAvatar.x;
-    const dy = myAvatar.targetY - myAvatar.y;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-
-    if (dist > 2) {
-        myAvatar.x += (dx / dist) * myAvatar.speed;
-        myAvatar.y += (dy / dist) * myAvatar.speed;
-
+    if (targetPoint) {
+        myAvatar.targetX = Math.max(-6, Math.min(6, targetPoint.x));
+        myAvatar.targetZ = Math.max(-5, Math.min(5, targetPoint.z));
         fbUpdate(ref(db, 'rooms/phongcaunguyen/users/' + myId), {
-            x: Math.round(myAvatar.x),
-            y: Math.round(myAvatar.y)
+            targetX: myAvatar.targetX, targetZ: myAvatar.targetZ
         });
     }
-}
+});
 
-// 7. LẦN CHUỖI TẠI BỆ THỜ ĐỨC MẸ
-let currentRosaryStep = 0;
-const totalRosaryBeads = 10;
+// 6. VÒNG LẶP RENDER 3D
+function animate() {
+    requestAnimationFrame(animate);
 
-window.openRosaryModal = function() {
-    if (!myAvatar.joined) {
-        alert("Vui lòng bước vào phòng cầu nguyện trước!");
-        return;
+    if (myAvatar.joined) {
+        let dx = myAvatar.targetX - myAvatar.x;
+        let dz = myAvatar.targetZ - myAvatar.z;
+        if (Math.hypot(dx, dz) > 0.1) {
+            myAvatar.x += dx * myAvatar.speed;
+            myAvatar.z += dz * myAvatar.speed;
+            fbUpdate(ref(db, 'rooms/phongcaunguyen/users/' + myId), { x: myAvatar.x, z: myAvatar.z });
+        }
     }
-    triggerAction('📿 Đang lần chuỗi Mân Côi', 'duc-me');
-    currentRosaryStep = 0;
-    renderRosaryBeads();
-    document.getElementById('rosaryModal').style.display = 'flex';
-}
 
-window.closeRosaryModal = function() {
-    document.getElementById('rosaryModal').style.display = 'none';
-    window.triggerAction('📿 Đã hoàn thành giờ kinh Mân Côi');
-}
-
-function renderRosaryBeads() {
-    const path = document.getElementById('rosaryPath');
-    path.innerHTML = '';
-    for (let i = 0; i < totalRosaryBeads; i++) {
-        const bead = document.createElement('div');
-        bead.className = 'rosary-bead';
-        if (i < currentRosaryStep) bead.classList.add('completed');
-        if (i === currentRosaryStep) bead.classList.add('active');
-        bead.innerText = i + 1;
-        bead.onclick = () => {
-            if (i === currentRosaryStep) {
-                currentRosaryStep++;
-                renderRosaryBeads();
-            }
-        };
-        path.appendChild(bead);
+    // Cập nhật vị trí tất cả avatar online
+    for (let id in onlineUsers) {
+        updateAvatarMesh(id, onlineUsers[id], id === myId);
     }
-    document.getElementById('rosaryCounter').innerText = `Đã đọc: ${currentRosaryStep} / ${totalRosaryBeads} kinh`;
+
+    renderer.render(scene, camera);
 }
 
-// 8. ÂM THANH NỀN
+fetchScripture();
+fetchPrayersFromSheet();
+animate();
+
+// Xử lý âm thanh & chuỗi Mân Côi
 let isAudioPlaying = false;
 window.toggleAudio = function() {
     const audio = document.getElementById('bgAudio');
     const btn = document.getElementById('audioToggleBtn');
-    
-    if (!audio) return;
-
     if (isAudioPlaying) {
-        audio.pause();
-        isAudioPlaying = false;
-        btn.classList.remove('active');
-        btn.innerText = '🎵 Bật Nhạc';
+        audio.pause(); isAudioPlaying = false; btn.innerText = '🎵 Bật Nhạc';
     } else {
-        audio.play().then(() => {
-            isAudioPlaying = true;
-            btn.classList.add('active');
-            btn.innerText = '🎵 Tắt Nhạc';
-        }).catch(e => {
-            console.log("Trình duyệt chặn autoplay:", e);
-            alert("Vui lòng tương tác với trang web trước khi bật nhạc!");
-        });
+        audio.play().then(() => { isAudioPlaying = true; btn.innerText = '🎵 Tắt Nhạc'; }).catch(() => alert("Click tương tác trang trước!"));
     }
-}
+};
 
-// 9. RENDER KHÔNG GIAN NHÀ THỜ CHI TIẾT
-function getRoleIcon(role) {
-    switch(role) {
-        case 'Linh mục': return '✝️';
-        case 'Tu sĩ nam': return '🚹';
-        case 'Tu sĩ nữ': return '🚺';
-        default: return '🕯️';
-    }
-}
-
-function drawChurch() {
-    // Sàn nhà thờ
-    ctx.fillStyle = '#2b303c';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Thảm đỏ lối đi chính
-    ctx.fillStyle = '#bf616a';
-    ctx.fillRect(400, 100, 120, 380);
-
-    // === 1. BÀN THỜ CHÍNH ===
-    ctx.fillStyle = '#3b4252';
-    ctx.fillRect(320, 45, 280, 75);
-    ctx.fillStyle = '#d8dee9';
-    ctx.fillRect(415, 65, 90, 30);
-    ctx.fillStyle = '#ebcb8b';
-    ctx.font = '11px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('✝', 460, 78);
-    ctx.fillText('BÀN THỜ CHÍNH', 460, 91);
-
-    // === 2. BÊN PHẢI CUNG THÁNH: NHÀ TẠM & ĐÈN CHẦU (ĐỎ) ===
-    ctx.fillStyle = '#4c566a';
-    ctx.fillRect(590, 50, 65, 65);
-    ctx.fillStyle = '#ebcb8b';
-    ctx.font = '10px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('Nhà Tạm', 622, 78);
-
-    // Đèn đỏ chầu Thánh Thể nhấp nháy
-    ctx.beginPath();
-    ctx.arc(622, 95, 4 + Math.sin(Date.now() / 200) * 1.5, 0, Math.PI * 2);
-    ctx.fillStyle = '#ff5555';
-    ctx.fill();
-
-    // === 3. BÊN TRÁI CUNG THÁNH: BỆ THỜ ĐỨC MẸ MARIA ===
-    ctx.fillStyle = '#4c566a';
-    ctx.fillRect(100, 50, 65, 65);
-    ctx.fillStyle = '#81a1c1';
-    ctx.font = '10px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('Đức Mẹ', 132, 85);
-
-    // === 4. BÊN PHẢI NGOÀI CUNG THÁNH: 3 BỆ THỜ (TÁCH DÒNG VÀ CÂN ĐỐI) ===
-    ctx.font = '9px sans-serif';
-    ctx.textAlign = 'center';
-
-    // Bệ 1: Thánh Carlo Acutis
-    ctx.fillStyle = '#3b4252';
-    ctx.fillRect(715, 50, 80, 65);
-    ctx.fillStyle = '#d8dee9';
-    ctx.fillText('Thánh', 755, 70);
-    ctx.fillText('Carlo Acutis', 755, 86);
-
-    // Bệ 2: Thánh Giuse
-    ctx.fillStyle = '#3b4252';
-    ctx.fillRect(805, 50, 80, 65);
-    ctx.fillStyle = '#d8dee9';
-    ctx.fillText('Thánh', 845, 70);
-    ctx.fillText('Giuse', 845, 86);
-
-    // Bệ 3: Các Thánh Tử Đạo Việt Nam & Trung Hoa
-    ctx.fillStyle = '#3b4252';
-    ctx.fillRect(895, 50, 60, 65);
-    ctx.fillStyle = '#d8dee9';
-    ctx.fillText('Thánh Tử Đạo', 925, 68);
-    ctx.fillText('Việt Nam', 925, 84);
-    ctx.fillText('Trung Hoa', 925, 100);
-    
-
-    // === 5. KHU VỰC LÒNG NHÀ THỜ (Các hàng ghế) ===
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
-    ctx.lineWidth = 2;
-    for (let y = 200; y < 450; y += 45) {
-        ctx.strokeRect(80, y, 260, 25);
-        ctx.strokeRect(620, y, 260, 25);
-    }
-}
-
-function drawAvatar(p, isMe = false) {
-    ctx.save();
-    ctx.translate(p.x, p.y);
-
-    if (isMe) {
-        ctx.beginPath();
-        ctx.arc(0, 0, 18, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(136, 192, 208, 0.3)';
-        ctx.fill();
-    }
-
-    ctx.font = '18px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(getRoleIcon(p.role), 0, 6);
-
-    ctx.fillStyle = isMe ? '#88c0d0' : '#eceff4';
-    ctx.font = '11px sans-serif';
-    ctx.fillText(p.name, 0, -16);
-
-    if (p.action) {
-        ctx.fillStyle = '#ebcb8b';
-        ctx.font = '10px sans-serif';
-        ctx.fillText(p.action, 0, -30);
-    }
-
-    ctx.restore();
-}
-
-function render() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawChurch();
-
-    for (let id in onlineUsers) {
-        let user = onlineUsers[id];
-        if (id === myId) {
-            drawAvatar(myAvatar, true);
-        } else {
-            let dx = (user.targetX !== undefined ? user.targetX : user.x) - user.x;
-            let dy = (user.targetY !== undefined ? user.targetY : user.y) - user.y;
-            if (Math.abs(dx) > 1) user.x += dx * 0.1;
-            if (Math.abs(dy) > 1) user.y += dy * 0.1;
-
-            drawAvatar(user, false);
-        }
-    }
-}
-
-function loop() {
-    updateGame();
-    render();
-    requestAnimationFrame(loop);
-}
-
-// Khởi chạy hệ thống
-fetchScripture();
-fetchPrayersFromSheet();
-loop();
+let currentRosaryStep = 0;
+window.openRosaryModal = () => { triggerAction('📿 Đang lần chuỗi', 'duc-me'); document.getElementById('rosaryModal').style.display = 'flex'; };
+window.closeRosaryModal = () => document.getElementById('rosaryModal').style.display = 'none';
