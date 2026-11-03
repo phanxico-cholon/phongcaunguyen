@@ -95,30 +95,26 @@ dirLight.position.set(10, 20, 10);
 dirLight.castShadow = true;
 scene.add(dirLight);
 
-// Dựng Không gian Nhà Thơ 3D
+// Dựng Không gian Nhà Thờ 3D
 function buildChurch3D() {
-    // Sàn nhà thờ
     const floorGeo = new THREE.BoxGeometry(14, 0.5, 12);
     const floorMat = new THREE.MeshStandardMaterial({ color: 0x2b303c, roughness: 0.8 });
     const floor = new THREE.Mesh(floorGeo, floorMat);
     floor.position.y = -0.25;
     scene.add(floor);
 
-    // Thảm đỏ lối đi
     const carpetGeo = new THREE.BoxGeometry(2.5, 0.52, 11.5);
     const carpetMat = new THREE.MeshStandardMaterial({ color: 0xbf616a });
     const carpet = new THREE.Mesh(carpetGeo, carpetMat);
     carpet.position.set(0, -0.2, 0.25);
     scene.add(carpet);
 
-    // Bàn Thờ Chính
     const altarGeo = new THREE.BoxGeometry(3.5, 1.2, 1.2);
     const altarMat = new THREE.MeshStandardMaterial({ color: 0x3b4252 });
     const mainAltar = new THREE.Mesh(altarGeo, altarMat);
     mainAltar.position.set(0, 0.6, -4.5);
     scene.add(mainAltar);
 
-    // Bệ Đức Mẹ & Nhà Tạm
     createShrine(-4, -4.5, 1.5, 1.2, 1.2, 0x4c566a);
     createShrine(4, -4.5, 1.5, 1.2, 1.2, 0x4c566a);
 }
@@ -133,7 +129,7 @@ function createShrine(x, z, w, h, d, color) {
 
 buildChurch3D();
 
-// Tạo Avatar 3D cho người dùng (Dạng hình trụ kết hợp nhãn tên HTML)
+// Tạo Avatar 3D
 const avatarMeshes = {};
 
 function updateAvatarMesh(id, userData, isMe) {
@@ -141,35 +137,33 @@ function updateAvatarMesh(id, userData, isMe) {
     if (!meshGroup) {
         meshGroup = new THREE.Group();
 
-        // Thân nhân vật
         const bodyGeo = new THREE.CylinderGeometry(0.3, 0.3, 1, 16);
         const bodyMat = new THREE.MeshStandardMaterial({ color: isMe ? 0x88c0d0 : 0xeceff4 });
         const body = new THREE.Mesh(bodyGeo, bodyMat);
         body.position.y = 0.5;
         meshGroup.add(body);
 
-        // Nhãn tên nổi trên đầu
         const canvasLabel = document.createElement('canvas');
         const ctxLabel = canvasLabel.getContext('2d');
         canvasLabel.width = 256;
         canvasLabel.height = 64;
         ctxLabel.fillStyle = isMe ? '#88c0d0' : '#eceff4';
-        ctxLabel.font = 'bold 24px sans-serif';
+        ctxLabel.font = 'bold 22px sans-serif';
         ctxLabel.textAlign = 'center';
-        ctxLabel.fillText(userData.name, 128, 40);
+        ctxLabel.fillText(userData.name || 'Giáo dân', 128, 40);
 
         const texture = new THREE.CanvasTexture(canvasLabel);
         const spriteMat = new THREE.SpriteMaterial({ map: texture });
         const sprite = new THREE.Sprite(spriteMat);
-        sprite.scale.set(1.5, 0.4, 1);
-        sprite.position.y = 1.3;
+        sprite.scale.set(1.8, 0.45, 1);
+        sprite.position.y = 1.4;
         meshGroup.add(sprite);
 
         scene.add(meshGroup);
         avatarMeshes[id] = meshGroup;
     }
 
-    // Di chuyển mượt mà tới tọa độ mới
+    // Di chuyển mượt mà
     meshGroup.position.x += (userData.x - meshGroup.position.x) * 0.1;
     meshGroup.position.z += (userData.z - meshGroup.position.z) * 0.1;
 }
@@ -243,7 +237,7 @@ window.joinRoom = function() {
     myAvatar.role = document.getElementById('selectRole').value;
     myAvatar.joined = true;
 
-    myAvatar.x = (Math.random() - 0.5) * 6;
+    myAvatar.x = (Math.random() - 0.5) * 4;
     myAvatar.z = 3 + Math.random() * 2;
     myAvatar.targetX = myAvatar.x;
     myAvatar.targetZ = myAvatar.z;
@@ -277,7 +271,7 @@ window.triggerAction = function(actionText, zoneKey = null) {
     }, 8000);
 }
 
-// 4. SỔ TAY Ý NGUYỆN & CHUỖI MÂN CÔI
+// 4. SỔ TAY Ý NGUYỆN & LẦN CHUỖI MÂN CÔI
 window.openPrayerInputModal = () => document.getElementById('prayerModal').style.display = 'flex';
 window.closePrayerInputModal = () => document.getElementById('prayerModal').style.display = 'none';
 
@@ -290,6 +284,44 @@ window.submitPrayer = function() {
     alert("Đã lưu ý nguyện thành công!");
     document.getElementById('inputPrayerText').value = '';
     closePrayerInputModal();
+}
+
+let currentRosaryStep = 0;
+const totalRosaryBeads = 10;
+
+window.openRosaryModal = function() {
+    if (!myAvatar.joined) { alert("Vui lòng vào phòng trước!"); return; }
+    triggerAction('📿 Đang lần chuỗi Mân Côi', 'duc-me');
+    currentRosaryStep = 0;
+    renderRosaryBeads();
+    document.getElementById('rosaryModal').style.display = 'flex';
+}
+
+window.closeRosaryModal = function() {
+    document.getElementById('rosaryModal').style.display = 'none';
+    triggerAction('📿 Đã hoàn thành kinh Mân Côi');
+}
+
+function renderRosaryBeads() {
+    const path = document.getElementById('rosaryPath');
+    if (!path) return;
+    path.innerHTML = '';
+    for (let i = 0; i < totalRosaryBeads; i++) {
+        const bead = document.createElement('div');
+        bead.className = 'rosary-bead';
+        if (i < currentRosaryStep) bead.classList.add('completed');
+        if (i === currentRosaryStep) bead.classList.add('active');
+        bead.innerText = i + 1;
+        bead.onclick = () => {
+            if (i === currentRosaryStep) {
+                currentRosaryStep++;
+                renderRosaryBeads();
+            }
+        };
+        path.appendChild(bead);
+    }
+    const counter = document.getElementById('rosaryCounter');
+    if (counter) counter.innerText = `Đã đọc: ${currentRosaryStep} / ${totalRosaryBeads} kinh`;
 }
 
 function updateTicker() {
@@ -334,7 +366,7 @@ function animate() {
         }
     }
 
-    // Cập nhật vị trí tất cả avatar online
+    // Cập nhật vị trí avatar online
     for (let id in onlineUsers) {
         updateAvatarMesh(id, onlineUsers[id], id === myId);
     }
@@ -346,18 +378,15 @@ fetchScripture();
 fetchPrayersFromSheet();
 animate();
 
-// Xử lý âm thanh & chuỗi Mân Côi
+// Âm thanh nền
 let isAudioPlaying = false;
 window.toggleAudio = function() {
     const audio = document.getElementById('bgAudio');
     const btn = document.getElementById('audioToggleBtn');
+    if (!audio) return;
     if (isAudioPlaying) {
         audio.pause(); isAudioPlaying = false; btn.innerText = '🎵 Bật Nhạc';
     } else {
         audio.play().then(() => { isAudioPlaying = true; btn.innerText = '🎵 Tắt Nhạc'; }).catch(() => alert("Click tương tác trang trước!"));
     }
 };
-
-let currentRosaryStep = 0;
-window.openRosaryModal = () => { triggerAction('📿 Đang lần chuỗi', 'duc-me'); document.getElementById('rosaryModal').style.display = 'flex'; };
-window.closeRosaryModal = () => document.getElementById('rosaryModal').style.display = 'none';
