@@ -381,7 +381,7 @@ function drawChurch() {
     ctx.fillStyle = '#ebcb8b';
     ctx.font = '11px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('✝ BÀN THỜ CHÍNH', 460, 82);
+    ctx.fillText('✝ <br>BÀN THỜ CHÍNH', 460, 82);
 
     ctx.fillStyle = '#4c566a';
     ctx.fillRect(590, 60, 65, 55);
@@ -396,20 +396,25 @@ function drawChurch() {
     ctx.fillStyle = '#4c566a';
     ctx.fillRect(100, 60, 65, 55);
     ctx.fillStyle = '#81a1c1';
+    ctx.font = '9px sans-serif';
     ctx.fillText('Đức Mẹ', 132, 90);
 
     ctx.fillStyle = '#3b4252';
     ctx.fillRect(740, 60, 75, 55);
-    ctx.fillStyle = '#d8dee9';
+    ctx.fillStyle = '#81a1c1';
     ctx.font = '9px sans-serif';
     ctx.fillText('Thánh Carlo Acutis', 777, 85);
 
     ctx.fillStyle = '#3b4252';
     ctx.fillRect(825, 60, 75, 55);
+    ctx.fillStyle = '#81a1c1';
+    ctx.font = '9px sans-serif';
     ctx.fillText('Thánh Giuse', 862, 85);
 
     ctx.fillStyle = '#3b4252';
     ctx.fillRect(910, 60, 45, 55);
+    ctx.fillStyle = '#81a1c1';
+    ctx.font = '9px sans-serif';
     ctx.fillText('Thánh Tử Đạo VN và Trung Hoa', 932, 85);
 
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
