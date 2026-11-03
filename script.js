@@ -5,6 +5,7 @@ import { getDatabase, ref, set, update as fbUpdate, remove, onValue, onDisconnec
 const firebaseConfig = {
     apiKey: "AIzaSyCfgAZ0Pzd2W_6DkDTDNlErDAL5Uhy0NoI",
     authDomain: "phong-cau-nguyen-cha-tam.firebaseapp.com",
+    databaseURL: "https://phong-cau-nguyen-cha-tam-default-rtdb.firebaseio.com", // <-- Đã bổ sung chính xác URL Database
     projectId: "phong-cau-nguyen-cha-tam",
     storageBucket: "phong-cau-nguyen-cha-tam.firebasestorage.app",
     messagingSenderId: "727510955809",
@@ -14,7 +15,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
-const db = getDatabase(app);
+const db = getDatabase(app, "https://phong-cau-nguyen-cha-tam-default-rtdb.firebaseio.com");
 
 const canvas = document.getElementById('churchCanvas');
 const ctx = canvas.getContext('2d');
@@ -265,7 +266,6 @@ canvas.addEventListener('click', (e) => {
     myAvatar.targetY = e.clientY - rect.top;
 });
 
-// Đổi tên hàm từ update() thành updateGame() để tránh trùng lặp với từ khóa import từ Firebase
 function updateGame() {
     if (!myAvatar.joined) return;
     const dx = myAvatar.targetX - myAvatar.x;
@@ -323,24 +323,33 @@ function renderRosaryBeads() {
     document.getElementById('rosaryCounter').innerText = `Đã đọc: ${currentRosaryStep} / ${totalRosaryBeads} kinh`;
 }
 
+// 8. QUẢN LÝ ÂM THANH NỀN (An toàn, không bị lỗi AbortError)
 let isAudioPlaying = false;
 window.toggleAudio = function() {
     const audio = document.getElementById('bgAudio');
     const btn = document.getElementById('audioToggleBtn');
+    
+    if (!audio) return;
+
     if (isAudioPlaying) {
         audio.pause();
         isAudioPlaying = false;
         btn.classList.remove('active');
         btn.innerText = '🎵 Bật Nhạc';
     } else {
-        audio.play().catch(e => console.log("Trình duyệt chặn autoplay:", e));
-        isAudioPlaying = true;
-        btn.classList.add('active');
-        btn.innerText = '🎵 Tắt Nhạc';
+        // Đảm bảo audio được load trước khi play để tránh xung đột
+        audio.play().then(() => {
+            isAudioPlaying = true;
+            btn.classList.add('active');
+            btn.innerText = '🎵 Tắt Nhạc';
+        }).catch(e => {
+            console.log("Trình duyệt chặn autoplay hoặc chưa tương tác:", e);
+            alert("Vui lòng tương tác với trang web (click/chạm) trước khi bật nhạc!");
+        });
     }
 }
 
-// 8. RENDER KHÔNG GIAN NHÀ THỜ CHI TIẾT
+// 9. RENDER KHÔNG GIAN NHÀ THỜ CHI TIẾT
 function getRoleIcon(role) {
     switch(role) {
         case 'Linh mục': return '✝️';
@@ -446,7 +455,7 @@ function render() {
 }
 
 function loop() {
-    updateGame(); // Gọi hàm updateGame thay vì update để tránh xung đột
+    updateGame();
     render();
     requestAnimationFrame(loop);
 }
