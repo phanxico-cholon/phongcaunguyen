@@ -5,7 +5,7 @@ import { getDatabase, ref, set, update as fbUpdate, remove, onValue, onDisconnec
 const firebaseConfig = {
     apiKey: "AIzaSyCfgAZ0Pzd2W_6DkDTDNlErDAL5Uhy0NoI",
     authDomain: "phong-cau-nguyen-cha-tam.firebaseapp.com",
-    databaseURL: "https://phong-cau-nguyen-cha-tam-default-rtdb.firebaseio.com", // <-- Đã bổ sung chính xác URL Database
+    databaseURL: "https://phong-cau-nguyen-cha-tam-default-rtdb.firebaseio.com",
     projectId: "phong-cau-nguyen-cha-tam",
     storageBucket: "phong-cau-nguyen-cha-tam.firebasestorage.app",
     messagingSenderId: "727510955809",
@@ -258,12 +258,18 @@ function updateTicker() {
     }
 }
 
-// 6. DI CHUYỂN TRONG CANVAS
+// 6. DI CHUYỂN TRONG CANVAS (Bấm chuột để di chuyển)
 canvas.addEventListener('click', (e) => {
     if (!myAvatar.joined) return;
     const rect = canvas.getBoundingClientRect();
     myAvatar.targetX = e.clientX - rect.left;
     myAvatar.targetY = e.clientY - rect.top;
+
+    // Gửi ngay tọa độ đích mới lên Firebase để đồng bộ thời gian thực
+    fbUpdate(ref(db, 'rooms/phongcaunguyen/users/' + myId), {
+        targetX: Math.round(myAvatar.targetX),
+        targetY: Math.round(myAvatar.targetY)
+    });
 });
 
 function updateGame() {
@@ -276,6 +282,7 @@ function updateGame() {
         myAvatar.x += (dx / dist) * myAvatar.speed;
         myAvatar.y += (dy / dist) * myAvatar.speed;
 
+        // Cập nhật tọa độ hiện tại liên tục lên Firebase
         fbUpdate(ref(db, 'rooms/phongcaunguyen/users/' + myId), {
             x: Math.round(myAvatar.x),
             y: Math.round(myAvatar.y)
@@ -323,7 +330,7 @@ function renderRosaryBeads() {
     document.getElementById('rosaryCounter').innerText = `Đã đọc: ${currentRosaryStep} / ${totalRosaryBeads} kinh`;
 }
 
-// 8. QUẢN LÝ ÂM THANH NỀN (An toàn, không bị lỗi AbortError)
+// 8. QUẢN LÝ ÂM THANH NỀN
 let isAudioPlaying = false;
 window.toggleAudio = function() {
     const audio = document.getElementById('bgAudio');
@@ -337,14 +344,13 @@ window.toggleAudio = function() {
         btn.classList.remove('active');
         btn.innerText = '🎵 Bật Nhạc';
     } else {
-        // Đảm bảo audio được load trước khi play để tránh xung đột
         audio.play().then(() => {
             isAudioPlaying = true;
             btn.classList.add('active');
             btn.innerText = '🎵 Tắt Nhạc';
         }).catch(e => {
-            console.log("Trình duyệt chặn autoplay hoặc chưa tương tác:", e);
-            alert("Vui lòng tương tác với trang web (click/chạm) trước khi bật nhạc!");
+            console.log("Trình duyệt chặn autoplay:", e);
+            alert("Vui lòng tương tác với trang web trước khi bật nhạc!");
         });
     }
 }
