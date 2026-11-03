@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PHÒNG CẦU NGUYỆN TRỰC TUYẾN - Giáo xứ Thánh Phanxicô Xaviê Chợ Lớn | CHATAMVN</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app-container">
+    <!-- Thanh Lời Chúa trong ngày & Lưu ý mục vụ -->
+    <div class="scripture-bar">
+        <div class="scripture-header">✨ LỜI CHÚA VÀ THỰC HÀNH SỐNG HÔM NAY ✨</div>
+        <div id="scriptureText" class="scripture-content">Đang tải Lời Chúa từ CẦU NGUYỆN VỚI LỜI CHÚA...</div>
+        <div id="scripturePractice" class="scripture-practice"></div>
+        
+        <div class="pastoral-note">
+            <span>💡 Lưu ý:</span> Phòng cầu nguyện trực tuyến không thể thay thế việc tham dự Thánh lễ hoặc viếng Nhà thờ trực tiếp. Đây là góc nhỏ để bạn nhớ đến Chúa mỗi ngày và hiệp ý cầu nguyện trong từng giây phút của cuộc sống.
+        </div>
+    </div>
+
+    <!-- Màn hình Canvas Nhà thờ ảo -->
+    <div id="canvas-container">
+        <div class="header-info">
+            <h1>GIÁO XỨ THÁNH PHANXICÔ XAVIÊ CHỢ LỚN • 堤岸聖方濟各沙勿略華人天主堂</h1>
+            <p>Phòng Cầu Nguyện Hồi Tâm • Click/Chạm để di chuyển nhân vật</p>
+        </div>
+
+        <canvas id="churchCanvas" width="960" height="540"></canvas>
+
+        <!-- Khung đăng ký / Tham gia ban đầu -->
+        <div id="joinModal" class="modal-overlay">
+            <div class="modal-card">
+                <h2>Bước vào Phòng Cầu Nguyện</h2>
+                <p>Vui lòng chọn Tên Thánh + Họ tên và Bậc sống của bạn</p>
+                <input type="text" id="inputName" placeholder="Tên hiển thị (Ví dụ: Giuse Minh Trí)" maxlength="30">
+                <select id="selectRole">
+                    <option value="Giáo dân">Giáo dân 🕯️</option>
+                    <option value="Linh mục">Linh mục ✝️</option>
+                    <option value="Tu sĩ nam">Tu sĩ nam ⛪</option>
+                    <option value="Tu sĩ nữ">Tu sĩ nữ 🕊️</option>
+                </select>
+                <button class="btn-primary" onclick="joinRoom()">Bước vào Nhà Thờ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Thanh công cụ hành động tâm linh & Ra về -->
+    <div class="action-toolbar">
+        <button class="btn-action" onclick="triggerAction('🕯️ Thắp nến cầu nguyện')">🕯️ Thắp nến</button>
+        <button class="btn-action" onclick="triggerAction('⛪ Viếng Thánh Thể')">⛪ Viếng Thánh Thể</button>
+        <button class="btn-action" onclick="triggerAction('🌾 Tưởng nhớ linh hồn')">🌾 Tưởng nhớ linh hồn</button>
+        <button class="btn-action" onclick="triggerAction('📿 Lần chuỗi Mân Côi')">📿 Lần chuỗi</button>
+        <button class="btn-action" onclick="triggerAction('💻 Cầu nguyện cùng Thánh Carlo Acutis')">💻 Thánh Carlo Acutis</button>
+        <button class="btn-action" onclick="triggerAction('✝️ Cầu nguyện cùng Các Thánh Tử Đạo')">✝️ Các Thánh Tử Đạo Việt Nam và Trung Hoa</button>
+        <button class="btn-exit" onclick="leaveRoom()">🙏 Tạ ơn Chúa con ra về trong bình an</button>
+    </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
