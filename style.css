@@ -1,330 +1,286 @@
 * {
+    box-sizing: border-box;
     margin: 0;
     padding: 0;
-    box-sizing: border-box;
-    user-select: none;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-body {
-    background-color: #121519;
-    color: #eceff4;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    padding: 15px;
-}
-
-.app-container {
+body, html {
     width: 100%;
-    max-width: 980px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-/* Lời Chúa Bar & Lưu ý mục vụ */
-.scripture-bar {
-    background: rgba(46, 52, 64, 0.9);
-    border: 1px solid #3b4252;
-    border-radius: 10px;
-    padding: 12px 18px;
-    text-align: center;
-    backdrop-filter: blur(8px);
-}
-
-.scripture-header {
-    font-size: 11px;
-    color: #ebcb8b;
-    font-weight: 700;
-    letter-spacing: 1px;
-    margin-bottom: 4px;
-}
-
-.scripture-content {
-    font-size: 14px;
+    height: 100%;
+    overflow: hidden;
+    background-color: #1a1d24;
     color: #eceff4;
-    font-style: italic;
-    margin-bottom: 4px;
 }
 
-.scripture-practice {
-    font-size: 12px;
-    color: #a3be8c;
-    font-weight: 500;
-    margin-bottom: 6px;
-}
-
-.pastoral-note {
-    background: rgba(235, 203, 139, 0.08);
-    border-left: 3px solid #ebcb8b;
-    padding: 8px 12px;
-    border-radius: 4px;
-    font-size: 11px;
-    color: #d8dee9;
-    text-align: left;
-    line-height: 1.4;
-}
-
-.pastoral-note span {
-    color: #ebcb8b;
-    font-weight: 600;
-}
-
-/* Canvas Container & Prayer Ticker */
-#canvas-container {
-    position: relative;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-    border: 2px solid #3b4252;
-}
-
-canvas {
-    display: block;
-    background: #232731;
-    cursor: pointer;
-}
-
-.header-info {
-    position: absolute;
-    top: 15px;
-    left: 15px;
-    background: rgba(36, 41, 51, 0.75);
-    backdrop-filter: blur(6px);
-    padding: 10px 16px;
-    border-radius: 8px;
-    border: 1px solid rgba(255,255,255,0.08);
-    pointer-events: none;
-}
-
-.header-info h1 {
-    font-size: 12px;
-    color: #ebcb8b;
-}
-
-.header-info p {
-    font-size: 10px;
-    color: #d8dee9;
-}
-
-/* Ticker Ý nguyện chạy ngang */
-.prayer-ticker-container {
-    background: rgba(20, 24, 33, 0.95);
-    border-top: 1px solid #3b4252;
-    display: flex;
-    align-items: center;
-    padding: 8px 12px;
-    overflow: hidden;
-    height: 35px;
-}
-
-.ticker-label {
-    font-size: 11px;
-    color: #ebcb8b;
-    font-weight: bold;
-    white-space: nowrap;
-    margin-right: 10px;
-    z-index: 2;
-    background: #141821;
-    padding-right: 5px;
-}
-
-.ticker-track {
-    font-size: 12px;
-    color: #a3be8c;
-    white-space: nowrap;
-    animation: tickerAnim 25s linear infinite;
-}
-
-@keyframes tickerAnim {
-    0% { transform: translateX(100%); }
-    100% { transform: translateX(-100%); }
-}
-
-/* Action Toolbar */
-.action-toolbar {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    justify-content: center;
-    background: rgba(36, 41, 51, 0.9);
-    padding: 12px;
-    border-radius: 10px;
-    border: 1px solid #3b4252;
-}
-
-.btn-action, .btn-exit, .btn-audio {
-    background: #3b4252;
-    color: #d8dee9;
-    border: 1px solid #4c566a;
-    padding: 8px 14px;
-    border-radius: 20px;
-    font-size: 12px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.btn-action:hover, .btn-audio:hover {
-    background: #5e81ac;
-    color: #fff;
-    border-color: #88c0d0;
-    transform: translateY(-2px);
-}
-
-.btn-audio.active {
-    background: #a3be8c;
-    color: #2e3440;
-    font-weight: 600;
-}
-
-.btn-exit {
-    background: #bf616a;
-    color: #fff;
-    border-color: #d08770;
-    font-weight: 600;
-}
-
-.btn-exit:hover {
-    background: #d08770;
-    transform: translateY(-2px);
-}
-
-/* Modal Form */
+/* Modal Đăng nhập & Hộp thoại */
 .modal-overlay {
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(18, 21, 25, 0.85);
-    backdrop-filter: blur(8px);
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(15, 17, 21, 0.85);
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 10;
+    z-index: 1000;
+    backdrop-filter: blur(8px);
 }
 
 .modal-card {
     background: #2e3440;
-    padding: 24px;
-    border-radius: 12px;
     border: 1px solid #4c566a;
+    padding: 30px;
+    border-radius: 16px;
+    width: 400px;
+    max-width: 90%;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.5);
     text-align: center;
-    width: 320px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
 }
 
 .modal-card h2 {
-    font-size: 16px;
     color: #ebcb8b;
+    margin-bottom: 8px;
+    font-size: 20px;
+}
+
+.modal-card h3 {
+    color: #88c0d0;
+    margin-bottom: 12px;
 }
 
 .modal-card p {
-    font-size: 12px;
     color: #d8dee9;
+    font-size: 13px;
+    margin-bottom: 20px;
 }
 
-.modal-card input, .modal-card select {
-    padding: 10px;
-    border-radius: 6px;
-    border: 1px solid #4c566a;
+.input-group {
+    text-align: left;
+    margin-bottom: 16px;
+}
+
+.input-group label {
+    display: block;
+    font-size: 12px;
+    color: #99c24d;
+    margin-bottom: 6px;
+    font-weight: 600;
+}
+
+.input-group input, .input-group select, .modal-card textarea {
+    width: 100%;
+    padding: 10px 14px;
     background: #3b4252;
+    border: 1px solid #4c566a;
     color: #fff;
-    font-size: 13px;
+    border-radius: 8px;
+    font-size: 14px;
     outline: none;
 }
 
+.modal-card textarea {
+    resize: none;
+    margin-bottom: 15px;
+}
+
 .btn-primary {
+    width: 100%;
+    padding: 12px;
     background: #5e81ac;
     color: white;
     border: none;
-    padding: 10px;
-    border-radius: 6px;
-    font-size: 13px;
-    font-weight: 600;
+    border-radius: 8px;
+    font-weight: bold;
     cursor: pointer;
+    transition: background 0.2s;
 }
 
 .btn-primary:hover {
     background: #81a1c1;
 }
 
-/* Rosary Modal Styling */
-.rosary-card {
-    background: #2e3440;
-    padding: 25px;
-    border-radius: 16px;
-    border: 1px solid #4c566a;
-    text-align: center;
-    width: 420px;
+.modal-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-secondary {
+    flex: 1;
+    padding: 10px;
+    background: #4c566a;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+/* Layout chính */
+#appContainer {
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.7);
+    height: 100vh;
 }
 
-.rosary-card h2 {
-    font-size: 18px;
+.church-header {
+    background: #242933;
+    padding: 10px 20px;
+    border-bottom: 1px solid #3b4252;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    z-index: 10;
+}
+
+.scripture-box {
+    font-size: 13px;
     color: #ebcb8b;
+    display: flex;
+    gap: 15px;
+    align-items: center;
 }
 
-.rosary-card p {
+.practice-text {
+    color: #a3be8c;
+}
+
+.ticker-container {
+    display: flex;
+    align-items: center;
+    background: #2e3440;
+    padding: 4px 10px;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.ticker-title {
+    font-size: 11px;
+    color: #b48ead;
+    font-weight: bold;
+    white-space: nowrap;
+    margin-right: 10px;
+}
+
+.ticker-wrap {
+    overflow: hidden;
+    white-space: nowrap;
+    width: 100%;
+}
+
+.ticker-track {
+    display: inline-block;
     font-size: 12px;
     color: #d8dee9;
+    animation: ticker 30s linear infinite;
 }
 
-.rosary-path {
+@keyframes ticker {
+    0% { transform: translateX(100%); }
+    100% { transform: translateX(-100%); }
+}
+
+/* Vùng chứa Canvas 3D */
+#canvasContainer {
+    flex: 1;
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+}
+
+#watermark {
+    position: absolute;
+    bottom: 15px;
+    right: 20px;
+    color: rgba(255,255,255,0.2);
+    font-size: 14px;
+    font-weight: bold;
+    pointer-events: none;
+}
+
+/* Footer điều khiển */
+.church-footer {
+    background: #242933;
+    padding: 12px;
+    border-top: 1px solid #3b4252;
     display: flex;
+    justify-content: center;
+    z-index: 10;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 10px;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 12px;
-    padding: 15px;
-    background: #232731;
-    border-radius: 12px;
-    min-height: 120px;
-    align-items: center;
+}
+
+.action-buttons button {
+    padding: 8px 14px;
+    background: #3b4252;
+    color: #eceff4;
+    border: 1px solid #4c566a;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.action-buttons button:hover {
+    background: #4c566a;
+    border-color: #88c0d0;
+}
+
+.action-buttons button.active {
+    background: #a3be8c;
+    color: #2e3440;
+}
+
+.btn-leave {
+    background: #bf616a !important;
+    border-color: #d08770 !important;
+}
+
+/* Modal Lần Chuỗi */
+.rosary-path {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin: 20px 0;
+    flex-wrap: wrap;
 }
 
 .rosary-bead {
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    background: #4c566a;
-    border: 2px solid #3b4252;
+    background: #3b4252;
+    border: 2px solid #4c566a;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 11px;
-    color: #d8dee9;
     cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.rosary-bead:hover {
-    transform: scale(1.1);
+    color: #d8dee9;
+    transition: all 0.2s;
 }
 
 .rosary-bead.active {
     background: #ebcb8b;
     color: #2e3440;
-    font-weight: bold;
-    box-shadow: 0 0 12px #ebcb8b;
+    transform: scale(1.1);
+    box-shadow: 0 0 10px #ebcb8b;
 }
 
 .rosary-bead.completed {
     background: #a3be8c;
     color: #2e3440;
+    border-color: #a3be8c;
 }
 
-.rosary-footer {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-#rosaryCounter {
-    font-size: 12px;
-    color: #a3be8c;
-    font-weight: 600;
+.rosary-counter {
+    font-size: 13px;
+    color: #88c0d0;
+    margin-bottom: 20px;
 }
