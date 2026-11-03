@@ -1,52 +1,91 @@
+// Import Firebase SDKs từ CDN chính thức
+import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
+import { getAnalytics } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-analytics.js";
+import { getDatabase, ref, set, update, remove, onValue, onDisconnect } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-database.js";
+
+// Cấu hình Firebase của bạn
+const firebaseConfig = {
+    apiKey: "AIzaSyCfgAZ0Pzd2W_6DkDTDNlErDAL5Uhy0NoI",
+    authDomain: "phong-cau-nguyen-cha-tam.firebaseapp.com",
+    projectId: "phong-cau-nguyen-cha-tam",
+    storageBucket: "phong-cau-nguyen-cha-tam.firebasestorage.app",
+    messagingSenderId: "727510955809",
+    appId: "1:727510955809:web:e91245a67e8fa7b853b060",
+    measurementId: "G-ER6FQT9VM0"
+};
+
+// Khởi tạo Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+const db = getDatabase(app); // Khởi tạo Realtime Database
+
 const canvas = document.getElementById('churchCanvas');
 const ctx = canvas.getContext('2d');
 
-// 2 ĐƯỜNG LINK CSV GOOGLE SHEETS CỦA BẠN
-const PRESENCE_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSxnDM9oFanvUUUtL-NqOvn6fM7mQhxD8L95hUqIv6c1CmwQN9htcN76ofjtLZMUSVSLrjSX8yyWqsV/pub?gid=0&single=true&output=csv";
 const SCRIPTURE_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSJ09XWzs4p3AEzE7g8DCH0Zff6_cTbmA_9TytwC0v7fjLw_BAuSHbGiQDnh8ixlUnABUn5AKCEO0sS/pub?gid=0&single=true&output=csv";
 
-// Khởi tạo Nhân vật bản thân
+// Hàm parse CSV thông minh (hỗ trợ dấu phẩy trong ngoặc kép "")
+function parseCSV(text) {
+    let lines = text.split('\n');
+    let result = [];
+    for (let line of lines) {
+        let row = [];
+        let inQuotes = false;
+        let entry = '';
+        for (let i = 0; i < line.length; i++) {
+            let char = line[i];
+            if (char === '"') {
+                inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+                row.push(entry.trim());
+                entry = '';
+            } else {
+                entry += char;
+            }
+        }
+        row.push(entry.trim());
+        result.push(row);
+    }
+    return result;
+}
+
+// Thông tin người dùng hiện tại
+let myId = 'user_' + Math.floor(Math.random() * 90000 + 10000);
 let myAvatar = {
-    id: 'user_' + Math.floor(Math.random() * 90000 + 10000),
     name: '',
     role: 'Giáo dân',
     x: 480,
-    y: 450,
+    y: 400,
     targetX: 480,
-    targetY: 450,
+    targetY: 400,
     speed: 3,
     action: null,
-    actionTimer: 0,
     joined: false
 };
 
-let otherAvatars = [];
-const candles = [{ x: 440, y: 160 }, { x: 520, y: 160 }];
+let onlineUsers = {};
+const candles = [{ x: 440, y: 140 }, { x: 520, y: 140 }];
+let userPrayers = ["Cầu cho gia đình luôn bình an và hiệp nhất trong tình yêu Chúa."];
 
-// 1. TẢI LỜI CHÚA TRONG NGÀY TỪ GOOGLE SHEET
+// 1. TẢI LỜI CHÚA TỪ GOOGLE SHEET
 async function fetchScripture() {
     try {
         const res = await fetch(SCRIPTURE_CSV);
         const text = await res.text();
-        const rows = text.split('\n').slice(1);
-        
+        const rows = parseCSV(text).slice(1);
         const todayStr = new Date().toISOString().split('T')[0];
         let found = null;
 
         for (let r of rows) {
-            const cols = r.split(',');
-            if (cols.length >= 4 && cols[0].trim() === todayStr) {
-                found = { cau: cols[1].trim(), trich: cols[2].trim(), thucHanh: cols[3].trim() };
+            if (r.length >= 4 && r[0] === todayStr) {
+                found = { cau: r[1].replace(/^"|"$/g, ''), trich: r[2].replace(/^"|"$/g, ''), thucHanh: r[3].replace(/^"|"$/g, '') };
                 break;
             }
         }
-
-        // Nếu ngày hôm nay chưa có dòng khớp chính xác, lấy dòng đầu tiên làm mặc định
-        if (!found && rows.length > 0 && rows[0].split(',').length >= 4) {
-            const cols = rows[0].split(',');
-            found = { cau: cols[1].trim(), trich: cols[2].trim(), thucHanh: cols[3].trim() };
+        if (!found && rows.length > 0 && rows[0].length >= 4) {
+            const r = rows[0];
+            found = { cau: r[1].replace(/^"|"$/g, ''), trich: r[2].replace(/^"|"$/g, ''), thucHanh: r[3].replace(/^"|"$/g, '') };
         }
-
         if (found) {
             document.getElementById('scriptureText').innerText = `"${found.cau}" (${found.trich})`;
             document.getElementById('scripturePractice').innerText = `👉 Thực hành sống: ${found.thucHanh}`;
@@ -56,88 +95,74 @@ async function fetchScripture() {
     }
 }
 
-// 2. TẢI DANH SÁCH HIỆN DIỆN TỪ GOOGLE SHEET
-async function fetchPresence() {
-    try {
-        const res = await fetch(PRESENCE_CSV);
-        const text = await res.text();
-        const rows = text.split('\n').slice(1);
-        
-        let loaded = [];
-        rows.forEach(r => {
-            const cols = r.split(',');
-            if (cols.length >= 4 && cols[1]) {
-                loaded.push({
-                    id: cols[0].trim(),
-                    name: cols[1].trim(),
-                    role: cols[2].trim() || 'Giáo dân',
-                    action: cols[3] ? cols[3].trim() : null,
-                    // Phân bổ vị trí ngẫu nhiên quanh khuôn viên nhà thờ
-                    x: Math.floor(Math.random() * (760 - 200)) + 200,
-                    y: Math.floor(Math.random() * (500 - 320)) + 320
-                });
-            }
-        });
-
-        otherAvatars = loaded.filter(u => u.id !== myAvatar.id);
-    } catch (e) {
-        console.error("Lỗi tải hiện diện:", e);
-    }
+// 2. LẮNG NGHE DỮ LIỆU THỜI GIAN THỰC TỪ FIREBASE
+function listenRealtimeUsers() {
+    const usersRef = ref(db, 'rooms/phongcaunguyen/users');
+    onValue(usersRef, (snapshot) => {
+        const data = snapshot.val();
+        onlineUsers = data || {};
+    });
 }
 
-// 3. THAO TÁC BƯỚC VÀO VÀ RA VỀ
-function joinRoom() {
+// 3. THAO TÁC THAM GIA VÀ RỜI PHÒNG
+window.joinRoom = function() {
     const inputName = document.getElementById('inputName').value.trim();
     if (!inputName) {
-        alert("Vui lòng nhập Tên hiển thị / Tên thánh của bạn!");
+        alert("Vui lòng nhập Tên Thánh + Họ tên của bạn!");
         return;
     }
     myAvatar.name = inputName;
     myAvatar.role = document.getElementById('selectRole').value;
     myAvatar.joined = true;
 
-    // Random vị trí xuất hiện ban đầu
     myAvatar.x = Math.floor(Math.random() * (700 - 260)) + 260;
-    myAvatar.y = Math.floor(Math.random() * (480 - 360)) + 360;
+    myAvatar.y = Math.floor(Math.random() * (440 - 320)) + 320;
     myAvatar.targetX = myAvatar.x;
     myAvatar.targetY = myAvatar.y;
 
     document.getElementById('joinModal').style.display = 'none';
+
+    // Đẩy dữ liệu lên Firebase Database
+    const userRef = ref(db, 'rooms/phongcaunguyen/users/' + myId);
+    set(userRef, myAvatar);
+    onDisconnect(userRef).remove(); // Tự động xóa khi mất kết nối/đóng trang
+
+    listenRealtimeUsers();
 }
 
-function leaveRoom() {
+window.leaveRoom = function() {
+    if (myAvatar.joined) {
+        remove(ref(db, 'rooms/phongcaunguyen/users/' + myId));
+    }
     myAvatar.joined = false;
-    myAvatar.action = null;
     document.getElementById('joinModal').style.display = 'flex';
 }
 
-function triggerAction(actionText) {
+window.triggerAction = function(actionText) {
     if (!myAvatar.joined) return;
     myAvatar.action = actionText;
-    myAvatar.actionTimer = 240;
+    
+    update(ref(db, 'rooms/phongcaunguyen/users/' + myId), { action: actionText });
 
     if (actionText.includes('Thắp nến')) {
         candles.push({ x: myAvatar.x, y: myAvatar.y - 12 });
     }
+
+    setTimeout(() => {
+        if (myAvatar.joined) {
+            myAvatar.action = null;
+            update(ref(db, 'rooms/phongcaunguyen/users/' + myId), { action: null });
+        }
+    }, 8000);
 }
 
-// 4. DI CHUYỂN BẰNG CLICK CHUỘT / CHẠM MÀN HÌNH
+// 4. DI CHUYỂN TRONG CANVAS
 canvas.addEventListener('click', (e) => {
     if (!myAvatar.joined) return;
     const rect = canvas.getBoundingClientRect();
     myAvatar.targetX = e.clientX - rect.left;
     myAvatar.targetY = e.clientY - rect.top;
 });
-
-// 5. RENDER ĐỒ HỌA KHÔNG GIAN 2D
-function getRoleIcon(role) {
-    switch(role) {
-        case 'Linh mục': return '✝️';
-        case 'Tu sĩ nam': return '⛪';
-        case 'Tu sĩ nữ': return '🕊️';
-        default: return '🕯️';
-    }
-}
 
 function update() {
     if (!myAvatar.joined) return;
@@ -148,42 +173,134 @@ function update() {
     if (dist > 2) {
         myAvatar.x += (dx / dist) * myAvatar.speed;
         myAvatar.y += (dy / dist) * myAvatar.speed;
-    }
 
-    if (myAvatar.actionTimer > 0) {
-        myAvatar.actionTimer--;
-        if (myAvatar.actionTimer === 0) myAvatar.action = null;
+        update(ref(db, 'rooms/phongcaunguyen/users/' + myId), {
+            x: Math.round(myAvatar.x),
+            y: Math.round(myAvatar.y)
+        });
+    }
+}
+
+// 5. CÁC TÍNH NĂNG MỞ RỘNG (LẦN CHUỖI, Ý NGUYỆN, ÂM THANH)
+let currentRosaryStep = 0;
+const totalRosaryBeads = 10;
+
+window.openRosaryModal = function() {
+    if (!myAvatar.joined) {
+        alert("Vui lòng bước vào phòng cầu nguyện trước!");
+        return;
+    }
+    currentRosaryStep = 0;
+    renderRosaryBeads();
+    document.getElementById('rosaryModal').style.display = 'flex';
+    window.triggerAction('📿 Đang lần chuỗi Mân Côi');
+}
+
+window.closeRosaryModal = function() {
+    document.getElementById('rosaryModal').style.display = 'none';
+    window.triggerAction('📿 Đã hoàn thành giờ kinh Mân Côi');
+}
+
+function renderRosaryBeads() {
+    const path = document.getElementById('rosaryPath');
+    path.innerHTML = '';
+    for (let i = 0; i < totalRosaryBeads; i++) {
+        const bead = document.createElement('div');
+        bead.className = 'rosary-bead';
+        if (i < currentRosaryStep) bead.classList.add('completed');
+        if (i === currentRosaryStep) bead.classList.add('active');
+        bead.innerText = i + 1;
+        bead.onclick = () => {
+            if (i === currentRosaryStep) {
+                currentRosaryStep++;
+                renderRosaryBeads();
+            }
+        };
+        path.appendChild(bead);
+    }
+    document.getElementById('rosaryCounter').innerText = `Đã đọc: ${currentRosaryStep} / ${totalRosaryBeads} kinh`;
+}
+
+window.openPrayerInputModal = function() {
+    if (!myAvatar.joined) {
+        alert("Vui lòng bước vào phòng cầu nguyện trước!");
+        return;
+    }
+    document.getElementById('prayerModal').style.display = 'flex';
+}
+
+window.closePrayerInputModal = function() {
+    document.getElementById('prayerModal').style.display = 'none';
+}
+
+window.submitPrayer = function() {
+    const text = document.getElementById('inputPrayerText').value.trim();
+    if (!text) {
+        alert("Vui lòng nhập nội dung ý nguyện!");
+        return;
+    }
+    userPrayers.push(`${myAvatar.name}: ${text}`);
+    updateTicker();
+    document.getElementById('inputPrayerText').value = '';
+    closePrayerInputModal();
+    alert("Ý nguyện của bạn đã được gửi lên Sổ tay cộng đoàn!");
+}
+
+function updateTicker() {
+    const track = document.getElementById('tickerTrack');
+    if (track) track.innerHTML = `<span>${userPrayers.join("   •   ")}</span>`;
+}
+
+let isAudioPlaying = false;
+window.toggleAudio = function() {
+    const audio = document.getElementById('bgAudio');
+    const btn = document.getElementById('audioToggleBtn');
+    if (isAudioPlaying) {
+        audio.pause();
+        isAudioPlaying = false;
+        btn.classList.remove('active');
+        btn.innerText = '🎵 Bật Nhạc';
+    } else {
+        audio.play().catch(e => console.log("Trình duyệt chặn autoplay:", e));
+        isAudioPlaying = true;
+        btn.classList.add('active');
+        btn.innerText = '🎵 Tắt Nhạc';
+    }
+}
+
+// 6. RENDER CANVAS
+function getRoleIcon(role) {
+    switch(role) {
+        case 'Linh mục': return '✝️';
+        case 'Tu sĩ nam': return '⛪';
+        case 'Tu sĩ nữ': return '🕊️';
+        default: return '🕯️';
     }
 }
 
 function drawChurch() {
-    // Sàn nhà thờ
     ctx.fillStyle = '#2b303c';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Thảm đỏ cung thánh
     ctx.fillStyle = '#bf616a';
-    ctx.fillRect(430, 140, 100, 400);
+    ctx.fillRect(430, 120, 100, 360);
 
-    // Bục Cung Thánh & Bàn Thờ
     ctx.fillStyle = '#3b4252';
-    ctx.fillRect(280, 70, 400, 90);
+    ctx.fillRect(280, 50, 400, 80);
     ctx.fillStyle = '#d8dee9';
-    ctx.fillRect(400, 95, 160, 35);
+    ctx.fillRect(400, 75, 160, 30);
     ctx.fillStyle = '#ebcb8b';
-    ctx.font = '12px sans-serif';
+    ctx.font = '11px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('✝ CUNG THÁNH - NHÀ THỜ CHA TAM', 480, 117);
+    ctx.fillText('✝ CUNG THÁNH - NHÀ THỜ CHA TAM', 480, 95);
 
-    // Tượng Đức Mẹ bên trái
     ctx.beginPath();
-    ctx.arc(140, 130, 22, 0, Math.PI * 2);
+    ctx.arc(130, 110, 20, 0, Math.PI * 2);
     ctx.fillStyle = '#81a1c1';
     ctx.fill();
     ctx.fillStyle = '#eceff4';
-    ctx.fillText('Đức Mẹ', 140, 168);
+    ctx.fillText('Đức Mẹ', 130, 145);
 
-    // Vẽ nến
     candles.forEach(c => {
         ctx.fillStyle = '#d08770';
         ctx.fillRect(c.x - 2, c.y, 4, 8);
@@ -205,17 +322,14 @@ function drawAvatar(p, isMe = false) {
         ctx.fill();
     }
 
-    // Biểu tượng Avatar theo Bậc sống
     ctx.font = '18px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText(getRoleIcon(p.role), 0, 6);
 
-    // Tên hiển thị
     ctx.fillStyle = isMe ? '#88c0d0' : '#eceff4';
     ctx.font = '11px sans-serif';
     ctx.fillText(p.name, 0, -16);
 
-    // Hành động tâm linh
     if (p.action) {
         ctx.fillStyle = '#ebcb8b';
         ctx.font = '10px sans-serif';
@@ -229,8 +343,14 @@ function render() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawChurch();
 
-    otherAvatars.forEach(p => drawAvatar(p, false));
-    if (myAvatar.joined) drawAvatar(myAvatar, true);
+    for (let id in onlineUsers) {
+        let user = onlineUsers[id];
+        if (id === myId) {
+            drawAvatar(myAvatar, true);
+        } else {
+            drawAvatar(user, false);
+        }
+    }
 }
 
 function loop() {
@@ -239,8 +359,7 @@ function loop() {
     requestAnimationFrame(loop);
 }
 
-// Khởi chạy hệ thống
+// Khởi chạy
 fetchScripture();
-fetchPresence();
-setInterval(fetchPresence, 10000); // Tự động đồng bộ mỗi 10 giây
+updateTicker();
 loop();
