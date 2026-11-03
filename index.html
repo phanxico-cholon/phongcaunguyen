@@ -24,10 +24,10 @@
     <div id="canvas-container">
         <div class="header-info">
             <h1>GIÁO XỨ THÁNH PHANXICÔ XAVIÊ CHỢ LỚN • 堤岸聖方濟各沙勿略華人天主堂</h1>
-            <p>Phòng Cầu Nguyện Hồi Tâm • Click/Chạm để di chuyển nhân vật</p>
+            <p>Phòng Cầu Nguyện Hồi Tâm • Click/Chạm để di chuyển trong nhà thờ</p>
         </div>
 
-        <canvas id="churchCanvas" width="960" height="480"></canvas>
+        <canvas id="churchCanvas" width="960" height="500"></canvas>
 
         <!-- Dải lụa Ý nguyện cộng đoàn chạy ngang (Ticker) -->
         <div class="prayer-ticker-container">
@@ -57,26 +57,24 @@
     <!-- Thanh công cụ hành động tâm linh & Ra về -->
     <div class="action-toolbar">
         <button class="btn-action" onclick="triggerAction('🕯️ Thắp nến cầu nguyện')">🕯️ Thắp nến</button>
-        <button class="btn-action" onclick="triggerAction('⛪ Viếng Thánh Thể')">⛪ Viếng Thánh Thể</button>
-        <button class="btn-action" onclick="triggerAction('🌾 Tưởng nhớ linh hồn')">🌾 Tưởng nhớ linh hồn</button>
+        <button class="btn-action" onclick="triggerAction('⛪ Viếng Thánh Thể', 'thanh-the')">⛪ Viếng Thánh Thể</button>
+        <button class="btn-action" onclick="triggerAction('🌾 Tưởng nhớ linh hồn', 'long-nha-tho')">🌾 Tưởng nhớ linh hồn</button>
         <button class="btn-action" onclick="openRosaryModal()">📿 Lần chuỗi</button>
-        <button class="btn-action" onclick="triggerAction('💻 Cầu nguyện cùng Thánh Carlo Acutis')">💻 Thánh Carlo Acutis</button>
-        <button class="btn-action" onclick="triggerAction('✝️ Cầu nguyện cùng Các Thánh Tử Đạo Việt Nam và Trung Hoa')">✝️ Các Thánh Tử Đạo</button>
+        <button class="btn-action" onclick="triggerAction('💻 Cầu nguyện cùng Thánh Carlo', 'carlo')">💻 Thánh Carlo Acutis</button>
+        <button class="btn-action" onclick="triggerAction('✝️ Các Thánh Tử Đạo', 'tu-dao')">✝️ Các Thánh Tử Đạo</button>
         <button class="btn-action" onclick="openPrayerInputModal()">✍️ Gửi ý nguyện</button>
         <button class="btn-audio" id="audioToggleBtn" onclick="toggleAudio()">🎵 Bật Nhạc</button>
         <button class="btn-exit" onclick="leaveRoom()">🙏 Tạ ơn Chúa con ra về trong bình an</button>
     </div>
 </div>
 
-<!-- Modal Lần Chuỗi Mân Côi Từng Hạt (Phong cách Hàn Quốc) -->
+<!-- Modal Lần Chuỗi Mân Côi Từng Hạt -->
 <div id="rosaryModal" class="modal-overlay" style="display: none;">
     <div class="rosary-card">
         <h2>📿 Lần Chuỗi Mân Côi Chiêm Niệm</h2>
-        <p id="rosaryInstruction">Bấm vào các hạt chuỗi bên dưới để tiến hành đọc kinh. Hạt đang sáng là hạt hiện tại.</p>
+        <p>Bấm vào các hạt chuỗi bên dưới để tiến hành đọc kinh tại bệ thờ Đức Mẹ.</p>
         
-        <div class="rosary-path" id="rosaryPath">
-            <!-- Các hạt chuỗi được tạo tự động bằng JS -->
-        </div>
+        <div class="rosary-path" id="rosaryPath"></div>
 
         <div class="rosary-footer">
             <span id="rosaryCounter">Đã đọc: 0 / 10 kinh</span>
@@ -85,11 +83,11 @@
     </div>
 </div>
 
-<!-- Modal Gửi Ý Nguyện (Prayer Wall Input) -->
+<!-- Modal Gửi Ý Nguyện -->
 <div id="prayerModal" class="modal-overlay" style="display: none;">
     <div class="modal-card">
         <h2>✍️ Gửi Sổ Tay Ý Nguyện</h2>
-        <p>Chia sẻ lời nguyện xin của bạn để cộng đoàn hiệp ý</p>
+        <p>Chia sẻ lời nguyện xin (Lưu Google Sheet & Hiện lên Tường nhà thờ)</p>
         <input type="text" id="inputPrayerText" placeholder="Nhập ý nguyện ngắn gọn..." maxlength="100">
         <div style="display: flex; gap: 10px; margin-top: 5px;">
             <button class="btn-primary" style="flex:1;" onclick="submitPrayer()">Gửi lên Sổ Tay</button>
@@ -98,7 +96,6 @@
     </div>
 </div>
 
-<!-- Thẻ Audio ẩn cho nhạc nền thinh lặng -->
 <audio id="bgAudio" loop>
     <source src="https://actions.google.com/sounds/v1/ambiences/outdoor_altar_ambience.ogg" type="audio/ogg">
 </audio>
