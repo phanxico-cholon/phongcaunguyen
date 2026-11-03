@@ -3,77 +3,208 @@
     padding: 0;
     box-sizing: border-box;
     user-select: none;
-}
-body {
-    background-color: #1a1e24;
-    color: #eceff4;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    overflow: hidden;
+}
+
+body {
+    background-color: #121519;
+    color: #eceff4;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 15px;
+}
+
+.app-container {
+    width: 100%;
+    max-width: 980px;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
+    gap: 12px;
 }
+
+/* Lời Chúa Bar & Lưu ý mục vụ */
+.scripture-bar {
+    background: rgba(46, 52, 64, 0.9);
+    border: 1px solid #3b4252;
+    border-radius: 10px;
+    padding: 12px 18px;
+    text-align: center;
+    backdrop-filter: blur(8px);
+}
+
+.scripture-header {
+    font-size: 11px;
+    color: #ebcb8b;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+}
+
+.scripture-content {
+    font-size: 14px;
+    color: #eceff4;
+    font-style: italic;
+    margin-bottom: 4px;
+}
+
+.scripture-practice {
+    font-size: 12px;
+    color: #a3be8c;
+    font-weight: 500;
+    margin-bottom: 6px;
+}
+
+.pastoral-note {
+    background: rgba(235, 203, 139, 0.08);
+    border-left: 3px solid #ebcb8b;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 11px;
+    color: #d8dee9;
+    text-align: left;
+    line-height: 1.4;
+}
+
+.pastoral-note span {
+    color: #ebcb8b;
+    font-weight: 600;
+}
+
+/* Canvas Container */
 #canvas-container {
     position: relative;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     border-radius: 12px;
     overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
     border: 2px solid #3b4252;
 }
+
 canvas {
     display: block;
-    background: #2e3440;
+    background: #232731;
     cursor: pointer;
 }
-.ui-panel {
-    position: absolute;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    gap: 12px;
-    background: rgba(46, 52, 64, 0.85);
-    backdrop-filter: blur(8px);
-    padding: 10px 20px;
-    border-radius: 30px;
-    border: 1px solid rgba(255,255,255,0.1);
-}
-.btn {
-    background: #4c566a;
-    color: #fff;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-.btn:hover {
-    background: #5e81ac;
-    transform: translateY(-2px);
-}
+
 .header-info {
     position: absolute;
-    top: 20px;
-    left: 20px;
-    background: rgba(46, 52, 64, 0.7);
+    top: 15px;
+    left: 15px;
+    background: rgba(36, 41, 51, 0.75);
     backdrop-filter: blur(6px);
-    padding: 12px 20px;
-    border-radius: 10px;
+    padding: 10px 16px;
+    border-radius: 8px;
     border: 1px solid rgba(255,255,255,0.08);
     pointer-events: none;
 }
+
 .header-info h1 {
+    font-size: 15px;
+    color: #ebcb8b;
+}
+
+.header-info p {
+    font-size: 11px;
+    color: #d8dee9;
+}
+
+/* Action Toolbar */
+.action-toolbar {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    background: rgba(36, 41, 51, 0.9);
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid #3b4252;
+}
+
+.btn-action, .btn-exit {
+    background: #3b4252;
+    color: #d8dee9;
+    border: 1px solid #4c566a;
+    padding: 8px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-action:hover {
+    background: #5e81ac;
+    color: #fff;
+    border-color: #88c0d0;
+    transform: translateY(-2px);
+}
+
+.btn-exit {
+    background: #bf616a;
+    color: #fff;
+    border-color: #d08770;
+    font-weight: 600;
+}
+
+.btn-exit:hover {
+    background: #d08770;
+    transform: translateY(-2px);
+}
+
+/* Modal Form */
+.modal-overlay {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(18, 21, 25, 0.85);
+    backdrop-filter: blur(8px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-card {
+    background: #2e3440;
+    padding: 24px;
+    border-radius: 12px;
+    border: 1px solid #4c566a;
+    text-align: center;
+    width: 320px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.modal-card h2 {
     font-size: 16px;
     color: #ebcb8b;
-    margin-bottom: 4px;
 }
-.header-info p {
+
+.modal-card p {
     font-size: 12px;
     color: #d8dee9;
+}
+
+.modal-card input, .modal-card select {
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #4c566a;
+    background: #3b4252;
+    color: #fff;
+    font-size: 13px;
+    outline: none;
+}
+
+.btn-primary {
+    background: #5e81ac;
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-primary:hover {
+    background: #81a1c1;
 }
